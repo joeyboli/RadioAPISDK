@@ -9,7 +9,6 @@ class ComposerStaticInit6c2117ffa7a301ee22458a53b9d33895
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
-        '06b8a576aaa70a8517a94b7ff6b37e5c' => __DIR__ . '/..' . '/beste/json/src/Json.php',
     );
 
     public static $prefixLengthsPsr4 = array (
