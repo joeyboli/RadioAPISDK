@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'joeyboli/radioapi-php',
-        'pretty_version' => '1.0.1',
-        'version' => '1.0.1.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'ada0fc114676f5f05ddfe6c8b0d62c5dd93b07ff',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -20,9 +20,9 @@
             'dev_requirement' => false,
         ),
         'joeyboli/radioapi-php' => array(
-            'pretty_version' => '1.0.1',
-            'version' => '1.0.1.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'ada0fc114676f5f05ddfe6c8b0d62c5dd93b07ff',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
