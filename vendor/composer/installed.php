@@ -3,7 +3,7 @@
         'name' => 'joeyboli/radioapisdk',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'bf4d189e70df0652150564a531d50aeb60ae374a',
+        'reference' => 'db33f3ae1d59eb2691a609d9c5b0b73f5860ac7e',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'joeyboli/radioapisdk' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'bf4d189e70df0652150564a531d50aeb60ae374a',
+            'reference' => 'db33f3ae1d59eb2691a609d9c5b0b73f5860ac7e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
