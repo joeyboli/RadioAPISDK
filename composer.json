@@ -1,0 +1,18 @@
+{
+  "name": "joey/radioapiphp",
+  "description": "RadioAPI PHP Package to interact with RadioAPI",
+  "type": "library",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "autoload": {
+    "psr-4": {
+      "RadioAPI\\": "src/"
+    }
+  },
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=8.3",
+    "beste/json": "^1.7",
+    "symfony/http-client": "^7.3"
+  }
+}
