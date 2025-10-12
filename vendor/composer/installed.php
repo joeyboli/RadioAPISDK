@@ -1,6 +1,6 @@
 <?php return array(
     'root' => array(
-        'name' => 'joey/radioapicore-php',
+        'name' => 'joeyboli/radioapi-php',
         'pretty_version' => '1.0.0',
         'version' => '1.0.0.0',
         'reference' => null,
@@ -19,7 +19,7 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'joey/radioapicore-php' => array(
+        'joeyboli/radioapi-php' => array(
             'pretty_version' => '1.0.0',
             'version' => '1.0.0.0',
             'reference' => null,

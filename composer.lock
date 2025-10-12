@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "12cd475e99d21f34892a147362824e67",
+    "content-hash": "695c0f25d8bd48ad85aabd26e68bdfaa",
     "packages": [
         {
             "name": "beste/json",

@@ -1,5 +1,5 @@
 {
-  "name": "joey/radioapiphp",
+  "name": "joeyboli/radioapi-php",
   "description": "RadioAPI PHP Package to interact with RadioAPI",
   "type": "library",
   "version": "1.0.0",
