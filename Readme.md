@@ -5,7 +5,7 @@ A simple PHP client for fetching radio stream metadata and searching music track
 ## Installation
 
 ```bash
-composer require joeyboli/radioapi-php
+composer require joeyboli/radioapi-php:1.0.1
 ```
 
 ## Quick Start
