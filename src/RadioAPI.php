@@ -124,6 +124,11 @@ class RadioAPI
     public const string LIVE365 = 'live365';
 
     /**
+     * RadioKing radio platform mount point
+     */
+    public const string RADIOKING = 'radioking';
+
+    /**
      * Create a new RadioAPI client instance
      *
      */
