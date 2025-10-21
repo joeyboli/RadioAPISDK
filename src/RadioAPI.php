@@ -109,6 +109,12 @@ class RadioAPI
     public const string LINE_MUSIC = 'linemusic';
 
     /**
+     * KKBOX Music service mount point
+     */
+    public const string KKBOX_MUSIC = 'kkbox';
+
+
+    /**
      * Auto-detect service mount point
      */
     public const string AUTO = 'auto';
