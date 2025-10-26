@@ -67,6 +67,527 @@ $api = new RadioAPI('https://your-radioapi-instance.com', 'your-api-key', [
 - `timeout` (int) - HTTP request timeout in seconds (default: 30)
 - `user_agent` (string) - Custom user agent string
 
+## Laravel Integration
+
+The RadioAPI SDK integrates seamlessly with Laravel applications. Here are several ways to use it effectively.
+
+### Service Provider Setup
+
+Create a service provider to configure the RadioAPI client:
+
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use RadioAPI\RadioAPI;
+
+class RadioAPIServiceProvider extends ServiceProvider
+{
+    public function register()
+    {
+        $this->app->singleton(RadioAPI::class, function ($app) {
+            return new RadioAPI(
+                config('services.radioapi.base_url'),
+                config('services.radioapi.api_key'),
+                [
+                    'language' => config('app.locale', 'en'),
+                    'with_history' => config('services.radioapi.with_history', true),
+                    'timeout' => config('services.radioapi.timeout', 30),
+                    'throw_on_errors' => config('services.radioapi.throw_on_errors', true),
+                ]
+            );
+        });
+    }
+}
+```
+
+Add to `config/services.php`:
+
+```php
+'radioapi' => [
+    'base_url' => env('RADIOAPI_BASE_URL'),
+    'api_key' => env('RADIOAPI_API_KEY'),
+    'with_history' => env('RADIOAPI_WITH_HISTORY', true),
+    'timeout' => env('RADIOAPI_TIMEOUT', 30),
+    'throw_on_errors' => env('RADIOAPI_THROW_ON_ERRORS', true),
+],
+```
+
+Add to your `.env` file:
+
+```env
+RADIOAPI_BASE_URL=https://your-radioapi-instance.com
+RADIOAPI_API_KEY=your-api-key-here
+RADIOAPI_WITH_HISTORY=true
+RADIOAPI_TIMEOUT=30
+RADIOAPI_THROW_ON_ERRORS=true
+```
+
+### Controller Usage
+
+Use dependency injection in your controllers:
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use RadioAPI\RadioAPI;
+use RadioAPI\Exceptions\RadioAPIException;
+
+class RadioController extends Controller
+{
+    public function __construct(private RadioAPI $radioApi)
+    {
+    }
+
+    public function getCurrentTrack(Request $request)
+    {
+        $streamUrl = $request->input('stream_url');
+        $service = $request->input('service', RadioAPI::AUTO);
+
+        try {
+            $response = $this->radioApi->getStreamTitle($streamUrl, $service);
+
+            if ($response->isSuccess()) {
+                return response()->json([
+                    'success' => true,
+                    'current_track' => $response->getCurrentTrack(),
+                    'stream_info' => $response->getStreamInfo(),
+                    'history' => $response->getHistory(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => $response->getError()
+            ], 400);
+
+        } catch (RadioAPIException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'status_code' => $e->getStatusCode()
+            ], 500);
+        }
+    }
+
+    public function searchMusic(Request $request)
+    {
+        $query = $request->input('query');
+        $service = $request->input('service', RadioAPI::AUTO);
+
+        try {
+            $response = $this->radioApi->searchMusic($query, $service);
+
+            if ($response->hasResults()) {
+                return response()->json([
+                    'success' => true,
+                    'tracks' => $response->getTracks(),
+                    'first_track' => $response->getFirstTrack(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No tracks found'
+            ], 404);
+
+        } catch (RadioAPIException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getImageColors(Request $request)
+    {
+        $imageUrl = $request->input('image_url');
+
+        try {
+            $response = $this->radioApi->getImageColors($imageUrl);
+
+            if ($response->isSuccess()) {
+                return response()->json([
+                    'success' => true,
+                    'dominant_color' => $response->getDominantColorHex(),
+                    'text_color' => $response->getTextColorHex(),
+                    'flutter_dominant' => $response->getDominantColorFlutterHex(),
+                    'flutter_text' => $response->getTextColorFlutterHex(),
+                    'palette' => $response->getPalette(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => $response->getError()
+            ], 400);
+
+        } catch (RadioAPIException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}
+```
+
+### Artisan Commands
+
+Create Artisan commands for radio metadata operations:
+
+```php
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use RadioAPI\RadioAPI;
+use RadioAPI\Exceptions\RadioAPIException;
+
+class GetRadioMetadata extends Command
+{
+    protected $signature = 'radio:metadata {stream_url} {--service=auto}';
+    protected $description = 'Get current track metadata from a radio stream';
+
+    public function __construct(private RadioAPI $radioApi)
+    {
+        parent::__construct();
+    }
+
+    public function handle()
+    {
+        $streamUrl = $this->argument('stream_url');
+        $service = $this->option('service');
+
+        try {
+            $response = $this->radioApi->getStreamTitle($streamUrl, $service);
+
+            if ($response->isSuccess()) {
+                $track = $response->getCurrentTrack();
+                $streamInfo = $response->getStreamInfo();
+
+                $this->info("Stream: {$streamInfo['name']}");
+                
+                if ($track) {
+                    $this->info("Now Playing: {$track['artist']} - {$track['song']}");
+                    $this->info("Album: {$track['album']}");
+                    $this->info("Year: {$track['year']}");
+                } else {
+                    $this->warn('No current track information available');
+                }
+
+                $history = $response->getHistory();
+                if (!empty($history)) {
+                    $this->info("\nRecent History:");
+                    foreach (array_slice($history, 0, 5) as $historyTrack) {
+                        $this->line("- {$historyTrack['artist']} - {$historyTrack['song']} ({$historyTrack['relative_time']})");
+                    }
+                }
+            } else {
+                $this->error('Failed to get metadata: ' . $response->getError());
+            }
+
+        } catch (RadioAPIException $e) {
+            $this->error('API Error: ' . $e->getMessage());
+            return 1;
+        }
+
+        return 0;
+    }
+}
+```
+
+### Laravel Jobs
+
+Use Laravel jobs for background processing:
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use RadioAPI\RadioAPI;
+use RadioAPI\Exceptions\RadioAPIException;
+use App\Models\RadioStation;
+
+class UpdateRadioMetadata implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public function __construct(
+        private RadioStation $station,
+        private string $service = RadioAPI::AUTO
+    ) {
+    }
+
+    public function handle(RadioAPI $radioApi)
+    {
+        try {
+            $response = $radioApi->getStreamTitle($this->station->stream_url, $this->service);
+
+            if ($response->isSuccess()) {
+                $track = $response->getCurrentTrack();
+                $streamInfo = $response->getStreamInfo();
+
+                // Update station metadata
+                $this->station->update([
+                    'current_artist' => $track['artist'] ?? null,
+                    'current_song' => $track['song'] ?? null,
+                    'current_album' => $track['album'] ?? null,
+                    'stream_name' => $streamInfo['name'] ?? null,
+                    'bitrate' => $streamInfo['bitrate'] ?? null,
+                    'format' => $streamInfo['format'] ?? null,
+                    'last_updated' => now(),
+                ]);
+
+                // Store track history
+                $history = $response->getHistory();
+                foreach ($history as $historyTrack) {
+                    $this->station->trackHistory()->updateOrCreate([
+                        'artist' => $historyTrack['artist'],
+                        'song' => $historyTrack['song'],
+                        'played_at' => $historyTrack['timestamp'],
+                    ]);
+                }
+            }
+
+        } catch (RadioAPIException $e) {
+            \Log::error('RadioAPI error for station ' . $this->station->id . ': ' . $e->getMessage());
+            $this->fail($e);
+        }
+    }
+}
+```
+
+### Blade Templates
+
+Display radio metadata in Blade templates:
+
+```blade
+{{-- resources/views/radio/player.blade.php --}}
+<div class="radio-player" x-data="radioPlayer('{{ $station->stream_url }}')" x-init="init()">
+    <div class="current-track">
+        <template x-if="currentTrack">
+            <div>
+                <h3 x-text="currentTrack.artist + ' - ' + currentTrack.song"></h3>
+                <p x-text="currentTrack.album"></p>
+                <img x-show="currentTrack.artwork" :src="currentTrack.artwork" alt="Album artwork">
+            </div>
+        </template>
+        
+        <template x-if="!currentTrack">
+            <div class="no-metadata">
+                <p>No track information available</p>
+            </div>
+        </template>
+    </div>
+
+    <div class="track-history" x-show="history.length > 0">
+        <h4>Recently Played</h4>
+        <ul>
+            <template x-for="track in history.slice(0, 5)" :key="track.timestamp">
+                <li>
+                    <span x-text="track.artist + ' - ' + track.song"></span>
+                    <small x-text="track.relative_time"></small>
+                </li>
+            </template>
+        </ul>
+    </div>
+</div>
+
+<script>
+function radioPlayer(streamUrl) {
+    return {
+        currentTrack: null,
+        history: [],
+        streamInfo: null,
+        
+        init() {
+            this.fetchMetadata();
+            // Update every 30 seconds
+            setInterval(() => this.fetchMetadata(), 30000);
+        },
+        
+        async fetchMetadata() {
+            try {
+                const response = await fetch('/api/radio/metadata', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        stream_url: streamUrl,
+                        service: 'spotify'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.currentTrack = data.current_track;
+                    this.history = data.history || [];
+                    this.streamInfo = data.stream_info;
+                }
+            } catch (error) {
+                console.error('Failed to fetch metadata:', error);
+            }
+        }
+    }
+}
+</script>
+```
+
+### API Routes
+
+Define API routes for radio metadata:
+
+```php
+// routes/api.php
+use App\Http\Controllers\RadioController;
+
+Route::prefix('radio')->group(function () {
+    Route::post('/metadata', [RadioController::class, 'getCurrentTrack']);
+    Route::post('/search', [RadioController::class, 'searchMusic']);
+    Route::post('/colors', [RadioController::class, 'getImageColors']);
+});
+```
+
+### Scheduled Tasks
+
+Set up scheduled tasks to update radio metadata:
+
+```php
+// app/Console/Kernel.php
+protected function schedule(Schedule $schedule)
+{
+    // Update all radio stations every minute
+    $schedule->call(function () {
+        $stations = \App\Models\RadioStation::active()->get();
+        
+        foreach ($stations as $station) {
+            \App\Jobs\UpdateRadioMetadata::dispatch($station, RadioAPI::SPOTIFY);
+        }
+    })->everyMinute();
+}
+```
+
+### Caching
+
+Implement caching for better performance:
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Cache;
+use RadioAPI\RadioAPI;
+use RadioAPI\Exceptions\RadioAPIException;
+
+class CachedRadioAPIService
+{
+    public function __construct(private RadioAPI $radioApi)
+    {
+    }
+
+    public function getStreamTitle(string $streamUrl, string $service = RadioAPI::AUTO, int $cacheTtl = 60)
+    {
+        $cacheKey = "radio_metadata:" . md5($streamUrl . $service);
+
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($streamUrl, $service) {
+            try {
+                $response = $this->radioApi->getStreamTitle($streamUrl, $service);
+                
+                if ($response->isSuccess()) {
+                    return [
+                        'success' => true,
+                        'current_track' => $response->getCurrentTrack(),
+                        'stream_info' => $response->getStreamInfo(),
+                        'history' => $response->getHistory(),
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'error' => $response->getError()
+                ];
+
+            } catch (RadioAPIException $e) {
+                return [
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                    'status_code' => $e->getStatusCode()
+                ];
+            }
+        });
+    }
+}
+```
+
+### Testing
+
+Create tests for your RadioAPI integration:
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+use RadioAPI\RadioAPI;
+use RadioAPI\Responses\StreamTitleResponse;
+use Mockery;
+
+class RadioAPITest extends TestCase
+{
+    public function test_can_get_stream_metadata()
+    {
+        $mockApi = Mockery::mock(RadioAPI::class);
+        $mockResponse = Mockery::mock(StreamTitleResponse::class);
+        
+        $mockResponse->shouldReceive('isSuccess')->andReturn(true);
+        $mockResponse->shouldReceive('getCurrentTrack')->andReturn([
+            'artist' => 'Test Artist',
+            'song' => 'Test Song',
+            'album' => 'Test Album'
+        ]);
+        
+        $mockApi->shouldReceive('getStreamTitle')
+            ->with('https://test.stream.com', RadioAPI::SPOTIFY)
+            ->andReturn($mockResponse);
+        
+        $this->app->instance(RadioAPI::class, $mockApi);
+        
+        $response = $this->postJson('/api/radio/metadata', [
+            'stream_url' => 'https://test.stream.com',
+            'service' => 'spotify'
+        ]);
+        
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'current_track' => [
+                    'artist' => 'Test Artist',
+                    'song' => 'Test Song',
+                    'album' => 'Test Album'
+                ]
+            ]);
+    }
+}
+```
+
 ## Stream Title API
 
 Retrieve current playing track metadata from radio streams.
