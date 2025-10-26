@@ -2,9 +2,7 @@
 
 namespace RadioAPI\Paths;
 
-use RadioAPI\Exceptions\ApiErrorException;
-use RadioAPI\Exceptions\ClientErrorException;
-use RadioAPI\Exceptions\ServerErrorException;
+use RadioAPI\Exceptions\RadioAPIException;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use RuntimeException;
@@ -75,9 +73,7 @@ abstract class BasePath
      * Perform GET request and return response array.
      *
      * @throws RuntimeException When HTTP request fails
-     * @throws ClientErrorException When API returns 4xx error
-     * @throws ServerErrorException When API returns 5xx error
-     * @throws ApiErrorException When API returns generic error
+     * @throws RadioAPIException When API returns error response
      */
     protected function fetchArrayFromUrl(string $url): array
     {
@@ -98,9 +94,7 @@ abstract class BasePath
      *
      * @param array $response The API response data
      * @param string $url The request URL for context
-     * @throws ClientErrorException When API returns 4xx error
-     * @throws ServerErrorException When API returns 5xx error
-     * @throws ApiErrorException When API returns generic error
+     * @throws RadioAPIException When API returns error response
      */
     protected function validateApiResponse(array $response, string $url = ''): void
     {
@@ -125,9 +119,7 @@ abstract class BasePath
      *
      * @param array $errorResponse The error response data
      * @param string $url The request URL for context
-     * @throws ClientErrorException When status is 4xx
-     * @throws ServerErrorException When status is 5xx
-     * @throws ApiErrorException When status is unknown or generic error
+     * @throws RadioAPIException When API returns error response
      */
     protected function throwApiError(array $errorResponse, string $url = ''): void
     {
@@ -140,16 +132,8 @@ abstract class BasePath
             'endpoint' => $this->getEndpoint(),
         ];
 
-        // Classify error based on status code
-        if ($status >= 400 && $status < 500) {
-            throw new ClientErrorException($message, $status, $errorResponse, $context);
-        }
-
-        if ($status >= 500) {
-            throw new ServerErrorException($message, $status, $errorResponse, $context);
-        }
-
-        throw new ApiErrorException($message, $status, $errorResponse, $context);
+        // Use single RadioAPIException - error type can be determined using convenience methods
+        throw new RadioAPIException($message, $status, $errorResponse, $context);
     }
 
     public function hasMetadata(): bool

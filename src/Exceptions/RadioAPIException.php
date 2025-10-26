@@ -2,10 +2,13 @@
 
 namespace RadioAPI\Exceptions;
 
+use RuntimeException;
+
 /**
- * Exception thrown for client-side errors (4xx HTTP status codes)
+ * Single exception class for all RadioAPI errors
+ * Replaces ApiErrorException, ClientErrorException, and ServerErrorException
  */
-class ClientErrorException extends RadioAPICoreException
+class RadioAPIException extends RuntimeException
 {
     private array $errorData;
     private int $statusCode;
@@ -63,5 +66,29 @@ class ClientErrorException extends RadioAPICoreException
     public function getErrorField(string $field, mixed $default = null): mixed
     {
         return $this->errorData[$field] ?? $default;
+    }
+
+    /**
+     * Check if this is a client error (4xx status code)
+     */
+    public function isClientError(): bool
+    {
+        return $this->statusCode >= 400 && $this->statusCode < 500;
+    }
+
+    /**
+     * Check if this is a server error (5xx status code)
+     */
+    public function isServerError(): bool
+    {
+        return $this->statusCode >= 500 && $this->statusCode < 600;
+    }
+
+    /**
+     * Check if this is a network error (no status code or connection issues)
+     */
+    public function isNetworkError(): bool
+    {
+        return $this->statusCode === 0 || $this->statusCode < 100;
     }
 }

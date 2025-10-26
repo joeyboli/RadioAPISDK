@@ -1,8 +1,10 @@
 {
   "name": "joeyboli/radioapisdk",
-  "description": "RadioAPI PHP Package to interact with RadioAPI",
+  "description": "Modern PHP SDK for RadioAPI - retrieve radio stream metadata, search music tracks, and analyze image colors",
   "type": "library",
   "license": "Apache-2.0",
+  "keywords": ["radio", "api", "metadata", "music", "streaming", "colors", "php"],
+  "homepage": "https://github.com/joeyboli/radioapisdk",
   "autoload": {
     "psr-4": {
       "RadioAPI\\": "src/"
@@ -12,5 +14,8 @@
   "require": {
     "php": ">=8.3",
     "symfony/http-client": "^7.2 || ^7.3"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0"
   }
 }

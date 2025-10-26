@@ -2,8 +2,11 @@
 
 namespace RadioAPI;
 
-use RadioAPI\Paths\MusicSearch;
-use RadioAPI\Paths\StreamTitle;
+use RadioAPI\Exceptions\RadioAPIException;
+use RadioAPI\Http\HttpClientWrapper;
+use RadioAPI\Response\ColorResponse;
+use RadioAPI\Response\MusicSearchResponse;
+use RadioAPI\Response\StreamTitleResponse;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -17,14 +20,14 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  *
  * @example
  * ```php
- * $api = new RadioAPI();
- * $api->setBaseUrl('https://api.example.com')
- *     ->setApiKey('your-api-key')
- *     ->setMount(RadioAPI::SPOTIFY);
+ * $api = new RadioAPI('https://api.example.com', 'your-api-key', [
+ *     'service' => RadioAPI::SPOTIFY,
+ *     'language' => 'en',
+ *     'with_history' => true
+ * ]);
  *
- * $metadata = $api->streamTitle()
- *     ->setStreamUrl('https://stream.example.com/radio')
- *     ->fetchArray();
+ * $response = $api->getStreamTitle('https://stream.example.com/radio');
+ * $currentTrack = $response->getCurrentTrack();
  * ```
  */
 class RadioAPI
@@ -35,6 +38,13 @@ class RadioAPI
      * @var HttpClientInterface
      */
     private HttpClientInterface $httpClient;
+
+    /**
+     * HTTP client wrapper for handling common patterns
+     *
+     * @var HttpClientWrapper
+     */
+    private HttpClientWrapper $httpWrapper;
 
     /**
      * Base URL of the RadioAPI service
@@ -137,164 +147,155 @@ class RadioAPI
     /**
      * Create a new RadioAPI client instance
      *
+     * @param string $baseUrl The base URL of the RadioAPI service
+     * @param string|null $apiKey The API key for authentication (optional)
+     * @param array $options Configuration options array
+     * @throws \InvalidArgumentException When required parameters are invalid
      */
-    public function __construct()
-    {
-        $this->httpClient = HttpClient::create();
-    }
+    public function __construct(
+        string $baseUrl,
+        ?string $apiKey = null,
+        array $options = []
+    ) {
+        // Validate required parameters
+        if (empty(trim($baseUrl))) {
+            throw new \InvalidArgumentException('Base URL cannot be empty');
+        }
 
-    /**
-     * Set the base URL of the RadioAPI service
-     *
-     * @param string|null $baseUrl The base URL (e.g., 'https://api.example.com')
-     * @return self Returns self for method chaining
-     */
-    public function setBaseUrl(?string $baseUrl): self
-    {
-        $this->baseUrl = $baseUrl;
-        return $this;
-    }
-
-
-
-    /**
-     * Set the API key for authentication
-     *
-     * @param string|null $apiKey The API key provided by your RadioAPI service
-     * @return self Returns self for method chaining
-     */
-    public function setApiKey(?string $apiKey): self
-    {
+        $this->baseUrl = rtrim($baseUrl, '/');
         $this->apiKey = $apiKey;
-        return $this;
+
+        // Set configuration options with defaults
+        $this->language = $options['language'] ?? 'en';
+        $this->withHistory = $options['with_history'] ?? true;
+        $this->throwOnApiErrors = $options['throw_on_errors'] ?? true;
+        $this->mount = $options['service'] ?? null;
+
+        // Validate language code format (basic validation)
+        if (!preg_match('/^[a-z]{2}$/', $this->language)) {
+            throw new \InvalidArgumentException('Language must be a valid ISO 639-1 code (e.g., "en", "fr")');
+        }
+
+        // Create HTTP client with default options
+        $httpClientOptions = [
+            'timeout' => $options['timeout'] ?? 30,
+            'headers' => [
+                'User-Agent' => $options['user_agent'] ?? 'RadioAPI-PHP/2.0',
+                'Accept' => 'application/json',
+            ],
+        ];
+
+        $this->httpClient = HttpClient::create($httpClientOptions);
+        
+        // Initialize HTTP wrapper with configuration
+        $this->httpWrapper = new HttpClientWrapper(
+            $this->httpClient,
+            $this->baseUrl,
+            $this->apiKey,
+            $httpClientOptions
+        );
     }
 
-    /**
-     * Set the language for API responses
-     *
-     * @param string|null $language ISO 639-1 language code (e.g., 'en', 'fr', 'de').
-     *                              Defaults to 'en' if null or empty.
-     * @return self Returns self for method chaining
-     */
-    public function setLanguage(?string $language): self
-    {
-        $this->language = $language ?: 'en';
-        return $this;
-    }
+
 
     /**
-     * Enable or disable track history in API responses
+     * Get image colors from a remote image URL
      *
-     * @param bool $enabled True to include history, false to exclude it
-     * @return self Returns self for method chaining
-     */
-    public function withHistory(bool $enabled = true): self
-    {
-        $this->withHistory = $enabled;
-        return $this;
-    }
-
-    /**
-     * Enable or disable exception throwing on API errors
+     * Extracts dominant colors and generates a color palette from the specified image.
+     * Returns a ColorResponse object with convenient methods for accessing color data.
      *
-     * When enabled, API errors will throw exceptions. When disabled,
-     * errors will be returned in the response array.
-     *
-     * @param bool $enabled True to throw exceptions, false to return errors in response
-     * @return self Returns self for method chaining
-     */
-    public function setThrowOnApiErrors(bool $enabled): self
-    {
-        $this->throwOnApiErrors = $enabled;
-        return $this;
-    }
-
-    /**
-     * Set the mount point for specialized service endpoints
-     *
-     * Mount points direct requests to service-specific endpoints for enhanced
-     * metadata retrieval (e.g., Spotify track IDs, Deezer links).
-     *
-     * @param string|null $mount The mount point name. Use class constants like
-     *                           RadioAPI::SPOTIFY, RadioAPI::DEEZER, etc.
-     * @return self Returns self for method chaining
-     *
-     * @see RadioAPI::SPOTIFY
-     * @see RadioAPI::DEEZER
-     * @see RadioAPI::APPLE_MUSIC
-     * @see RadioAPI::YOUTUBE_MUSIC
-     */
-    public function withService(?string $mount): self
-    {
-        $this->mount = $mount;
-        return $this;
-    }
-
-    /**
-     * Create a StreamTitle endpoint instance
-     *
-     * Returns a configured StreamTitle object for retrieving radio stream
-     * metadata and current track information.
-     *
-     * @return StreamTitle Configured StreamTitle instance
+     * @param string $imageUrl The URL of the image to analyze
+     * @return ColorResponse Response object containing color information
+     * @throws RadioAPIException When the API request fails or returns an error
      *
      * @example
      * ```php
-     * $metadata = $api->streamTitle()
-     *     ->setStreamUrl('https://stream.example.com/radio')
-     *     ->fetchArray();
+     * $response = $api->getImageColors('https://example.com/album-art.jpg');
+     * $dominantColor = $response->getDominantColorHex();
+     * $palette = $response->getPalette();
      * ```
      */
-    public function streamTitle(): StreamTitle
+    public function getImageColors(string $imageUrl): ColorResponse
     {
-        $streamTitle = new StreamTitle($this->httpClient);
-        $this->configureBasePath($streamTitle);
-        if ($this->mount) {
-            $streamTitle->withService($this->mount);
-        }
-        return $streamTitle;
+        $params = [
+            'image_url' => $imageUrl,
+            'language' => $this->language,
+        ];
+
+        $data = $this->httpWrapper->get('/colorthief', $params);
+        return new ColorResponse($data);
     }
 
     /**
-     * Create a MusicSearch endpoint instance
+     * Search for music tracks across streaming services
      *
-     * Returns a configured MusicSearch object for searching music tracks
-     * across various streaming services.
+     * Searches for music tracks using the specified query string and optional service.
+     * Returns a MusicSearchResponse object with methods for accessing search results.
      *
-     * @return MusicSearch Configured MusicSearch instance
+     * @param string $query The search query (artist, track, album, etc.)
+     * @param string|null $service Optional service to search (use class constants like RadioAPI::SPOTIFY)
+     * @return MusicSearchResponse Response object containing search results
+     * @throws RadioAPIException When the API request fails or returns an error
      *
      * @example
      * ```php
-     * $results = $api->musicSearch()
-     *     ->search('The Beatles - Hey Jude')
-     *     ->fetchArray();
+     * $response = $api->searchMusic('The Beatles - Hey Jude', RadioAPI::SPOTIFY);
+     * $tracks = $response->getTracks();
+     * $firstTrack = $response->getFirstTrack();
      * ```
      */
-    public function musicSearch(): MusicSearch
+    public function searchMusic(string $query, ?string $service = null): MusicSearchResponse
     {
-        $musicSearch = new MusicSearch($this->httpClient);
-        $this->configureBasePath($musicSearch);
-        if ($this->mount) {
-            $musicSearch->withService($this->mount);
+        $params = [
+            'query' => $query,
+            'language' => $this->language,
+        ];
+
+        // Use service parameter or fall back to mount
+        $serviceToUse = $service ?? $this->mount;
+        if ($serviceToUse) {
+            $params['service'] = $serviceToUse;
         }
-        return $musicSearch;
+
+        $data = $this->httpWrapper->get('/musicsearch', $params);
+        return new MusicSearchResponse($data);
     }
 
     /**
-     * Configure a BasePath instance with current client settings
+     * Get current track information from a radio stream
      *
-     * Applies all client configuration (baseUrl, apiKey, language, etc.)
-     * to the provided BasePath instance.
+     * Retrieves metadata about the currently playing track from the specified stream URL.
+     * Returns a StreamTitleResponse object with methods for accessing track and stream information.
      *
-     * @param mixed $basePath The BasePath instance to configure
-     * @return void
+     * @param string $streamUrl The URL of the radio stream to analyze
+     * @param string|null $service Optional service/platform hint (use class constants like RadioAPI::AZURACAST)
+     * @return StreamTitleResponse Response object containing stream metadata
+     * @throws RadioAPIException When the API request fails or returns an error
+     *
+     * @example
+     * ```php
+     * $response = $api->getStreamTitle('https://stream.example.com/radio');
+     * $currentTrack = $response->getCurrentTrack();
+     * $history = $response->getHistory();
+     * ```
      */
-    private function configureBasePath(mixed $basePath): void
+    public function getStreamTitle(string $streamUrl, ?string $service = null): StreamTitleResponse
     {
-        $basePath->setBaseUrl($this->baseUrl);
-        $basePath->setApiKey($this->apiKey);
-        $basePath->setLanguage($this->language);
-        $basePath->withHistory($this->withHistory);
-        $basePath->setThrowOnApiErrors($this->throwOnApiErrors);
+        $params = [
+            'stream_url' => $streamUrl,
+            'language' => $this->language,
+            'with_history' => $this->withHistory ? 'true' : 'false',
+        ];
+
+        // Use service parameter or fall back to mount
+        $serviceToUse = $service ?? $this->mount;
+        if ($serviceToUse) {
+            $params['service'] = $serviceToUse;
+        }
+
+        $data = $this->httpWrapper->get('/streamtitle', $params);
+        return new StreamTitleResponse($data);
     }
+
+
 }

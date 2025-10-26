@@ -1,6 +1,6 @@
 # RadioAPI PHP SDK
 
-A comprehensive PHP SDK for interacting with RadioAPI services to retrieve radio stream metadata and search music tracks across multiple streaming platforms.
+A modern PHP SDK for interacting with RadioAPI services to retrieve radio stream metadata and search music tracks across multiple streaming platforms.
 
 ## Installation
 
@@ -20,97 +20,97 @@ composer require joeyboli/radioapisdk
 ```php
 use RadioAPI\RadioAPI;
 
-$api = new RadioAPI();
-$api->setBaseUrl('https://api.example.com')
-    ->setApiKey('your-api-key');
+// Simple configuration
+$api = new RadioAPI('https://api.example.com', 'your-api-key');
 
 // Get current stream metadata
-$metadata = $api->streamTitle()
-    ->setStreamUrl('https://stream.example.com/radio')
-    ->fetchArray();
+$response = $api->getStreamTitle('https://stream.example.com/radio');
+echo "Now Playing: " . $response->getCurrentTrack()['artist'] . " - " . $response->getCurrentTrack()['song'];
 
 // Search for music
-$results = $api->musicSearch()
-    ->search('The Beatles - Hey Jude')
-    ->fetchArray();
+$response = $api->searchMusic('The Beatles - Hey Jude');
+if ($response->hasResults()) {
+    $track = $response->getFirstTrack();
+    echo "Found: {$track['artist']} - {$track['title']}";
+}
+
+// Get image colors
+$response = $api->getImageColors('https://example.com/image.jpg');
+echo "Dominant color: " . $response->getDominantColorHex();
 ```
 
 ## Configuration
 
-### Basic Setup
+### Constructor-Based Configuration
 
 ```php
-$api = new RadioAPI();
-$api->setBaseUrl('https://your-radioapi-instance.com')
-    ->setApiKey('your-api-key')
-    ->setLanguage('en')
-    ->withHistory(true)
-    ->setThrowOnApiErrors(true);
+use RadioAPI\RadioAPI;
+
+// Basic configuration
+$api = new RadioAPI('https://your-radioapi-instance.com', 'your-api-key');
+
+// Advanced configuration with options
+$api = new RadioAPI('https://your-radioapi-instance.com', 'your-api-key', [
+    'throw_on_errors' => true,     // Throw exceptions on API errors (default: true)
+    'language' => 'en',            // Response language (ISO 639-1 codes)
+    'with_history' => true,        // Include track history in responses (default: true)
+    'timeout' => 30,               // HTTP request timeout in seconds (default: 30)
+    'user_agent' => 'MyApp/1.0'    // Custom user agent
+]);
 ```
 
-### Configuration Methods
+### Configuration Options
 
-- `setBaseUrl(string $url)` - Set the RadioAPI service base URL
-- `setApiKey(string $key)` - Set your API key for authentication
-- `setLanguage(string $lang)` - Set response language (ISO 639-1 codes: 'en', 'fr', 'de', etc.)
-- `withHistory(bool $enabled)` - Include/exclude track history in responses (default: true)
-- `setThrowOnApiErrors(bool $enabled)` - Enable/disable exception throwing on API errors (default: true)
-- `withService(string $mount)` - Set service-specific mount point for enhanced metadata
+- `throw_on_errors` (bool) - Enable/disable exception throwing on API errors (default: true)
+- `language` (string) - Set response language using ISO 639-1 codes: 'en', 'fr', 'de', etc.
+- `with_history` (bool) - Include/exclude track history in responses (default: true)
+- `timeout` (int) - HTTP request timeout in seconds (default: 30)
+- `user_agent` (string) - Custom user agent string
 
-## StreamTitle API
+## Stream Title API
 
 Retrieve current playing track metadata from radio streams.
 
 ### Basic Usage
 
 ```php
-$stream = $api->streamTitle()
-    ->setStreamUrl('https://stream.example.com/radio')
-    ->fetchArray();
+$response = $api->getStreamTitle('https://stream.example.com/radio');
 
-if ($stream['metadataFound']) {
-    echo "Now Playing: {$stream['artist']} - {$stream['song']}\n";
-    echo "Album: {$stream['album']}\n";
+if ($response->isSuccess()) {
+    $currentTrack = $response->getCurrentTrack();
+    echo "Now Playing: {$currentTrack['artist']} - {$currentTrack['song']}\n";
+    echo "Album: {$currentTrack['album']}\n";
+    
+    // Access stream info
+    $streamInfo = $response->getStreamInfo();
+    echo "Stream: {$streamInfo['name']} ({$streamInfo['bitrate']}kbps)\n";
+    
+    // Get track history
+    $history = $response->getHistory();
+    foreach ($history as $track) {
+        echo "Previous: {$track['artist']} - {$track['song']} ({$track['relative_time']})\n";
+    }
 }
 ```
 
-### StreamTitle Methods
+### StreamTitleResponse Methods
 
-- `setStreamUrl(string $url)` - Set the radio stream URL to fetch metadata from
-- `withService(string $mount)` - Set mount point for service-specific endpoints
-- `fetchArray()` - Execute the request and return response as array
-- `hasMetadata()` - Check if metadata was successfully retrieved
-- `getData()` - Get the raw response data
+- `getCurrentTrack()` - Get current playing track information
+- `getStreamInfo()` - Get stream metadata (name, bitrate, format)
+- `getHistory()` - Get track history array
+- `isSuccess()` - Check if the request was successful
+- `getRawData()` - Get the complete raw response data
+- `getError()` - Get error message if request failed
 
-### Response Structure (Basic)
+### Response Data Structure
 
+The response objects provide convenient methods to access data, but you can also access the raw response data:
+
+**Current Track Information:**
 ```php
+$currentTrack = $response->getCurrentTrack();
+// Returns:
 [
-    'name' => 'Hunter.FM - O Canal K-pop',
-    'bitrate' => 256,
-    'format' => 'AAC',
-    'elapsed' => 143,
-    'artist' => 'RESCENE',
-    'song' => 'LOVE ATTACK',
-    'metadataFound' => true,
-    'history' => [
-        [
-            'artist' => 'NewJeans',
-            'song' => 'OMG',
-            'timestamp' => '2025-10-12 11:44:06.353021',
-            'relative_time' => '5 hours ago'
-        ]
-    ]
-]
-```
-
-### Response Structure (With Service Integration)
-
-```php
-[
-    'name' => 'Hunter.FM - O Canal K-pop',
-    'bitrate' => 0,
-    'format' => 'AAC',
     'artist' => 'RESCENE',
     'song' => 'LOVE ATTACK',
     'album' => 'SCENEDROME',
@@ -122,44 +122,78 @@ if ($stream['metadataFound']) {
     'remaining' => 70,
     'time' => '03:01',
     'stream' => 'https://song.link/d/2966352091',
-    'explicit' => false,
-    'songinfoFound' => true,
-    'metadataFound' => true,
-    'history' => [
-        [
-            'artist' => 'ENHYPEN',
-            'song' => 'Bite Me',
-            'timestamp' => '2025-10-12 16:39:25.868785',
-            'relative_time' => '4 minutes ago',
-            'artwork' => 'https://icdn2.streamafrica.net/stacks/6a615f61aac53844.jpg'
-        ]
-    ]
+    'explicit' => false
 ]
 ```
 
-## MusicSearch API
+**Stream Information:**
+```php
+$streamInfo = $response->getStreamInfo();
+// Returns:
+[
+    'name' => 'Hunter.FM - O Canal K-pop',
+    'bitrate' => 256,
+    'format' => 'AAC'
+]
+```
+
+**Track History:**
+```php
+$history = $response->getHistory();
+// Returns array of:
+[
+    [
+        'artist' => 'ENHYPEN',
+        'song' => 'Bite Me',
+        'timestamp' => '2025-10-12 16:39:25.868785',
+        'relative_time' => '4 minutes ago',
+        'artwork' => 'https://icdn2.streamafrica.net/stacks/6a615f61aac53844.jpg'
+    ]
+    // ... more tracks
+]
+```
+
+## Music Search API
 
 Search for music tracks across various streaming platforms.
 
 ### Basic Usage
 
 ```php
-$results = $api->musicSearch()
-    ->search('The Beatles - Hey Jude')
-    ->fetchArray();
+$response = $api->searchMusic('The Beatles - Hey Jude');
+
+if ($response->hasResults()) {
+    $track = $response->getFirstTrack();
+    echo "Found: {$track['artist']} - {$track['title']}\n";
+    echo "Album: {$track['album']}\n";
+    echo "Listen: {$track['stream']}\n";
+    
+    // Access all tracks
+    $tracks = $response->getTracks();
+    foreach ($tracks as $track) {
+        echo "Track: {$track['artist']} - {$track['title']}\n";
+    }
+}
+
+// Search with specific service
+$response = $api->searchMusic('Radiohead Creep', RadioAPI::SPOTIFY);
 ```
 
-### MusicSearch Methods
+### MusicSearchResponse Methods
 
-- `search(string $query)` - Set the search query for music tracks
-- `withService(string $mount)` - Set mount point for service-specific search
-- `fetchArray()` - Execute the search and return results as array
-- `hasMetadata()` - Check if search results were found
-- `getData()` - Get the raw response data
+- `getTracks()` - Get array of all found tracks
+- `getFirstTrack()` - Get the first/best match track
+- `hasResults()` - Check if any tracks were found
+- `isSuccess()` - Check if the request was successful
+- `getRawData()` - Get the complete raw response data
+- `getError()` - Get error message if request failed
 
-### Response Structure
+### Music Search Response Structure
 
+**Track Information:**
 ```php
+$track = $response->getFirstTrack();
+// Returns:
 [
     'artist' => 'SKKST',
     'title' => 'Dance With My Hands',
@@ -179,24 +213,57 @@ $results = $api->musicSearch()
 ]
 ```
 
+## Image Color Analysis API
+
+Extract dominant colors and generate color palettes from images.
+
+### Basic Usage
+
+```php
+$response = $api->getImageColors('https://example.com/image.jpg');
+
+if ($response->isSuccess()) {
+    echo "Dominant Color: " . $response->getDominantColorHex() . "\n";
+    echo "Text Color: " . $response->getTextColorHex() . "\n";
+    
+    // Get Flutter-compatible hex colors
+    echo "Flutter Dominant: " . $response->getDominantColorFlutterHex() . "\n";
+    echo "Flutter Text: " . $response->getTextColorFlutterHex() . "\n";
+    
+    // Get full color palette
+    $palette = $response->getPalette();
+    foreach ($palette as $color) {
+        echo "Color: {$color['hex']} (Population: {$color['population']})\n";
+    }
+}
+```
+
+### ColorResponse Methods
+
+- `getDominantColorHex()` - Get dominant color as hex string (#RRGGBB)
+- `getTextColorHex()` - Get recommended text color as hex string
+- `getDominantColorFlutterHex()` - Get dominant color in Flutter format (0xFFRRGGBB)
+- `getTextColorFlutterHex()` - Get text color in Flutter format
+- `getPalette()` - Get complete color palette with population data
+- `isSuccess()` - Check if the request was successful
+- `getRawData()` - Get the complete raw response data
+- `getError()` - Get error message if request failed
+
 ## Service Integration
 
 ### Music Streaming Services
 
-Enhance metadata with service-specific information:
+Enhance metadata with service-specific information by passing the service as a second parameter:
 
 ```php
-// Spotify integration
-$spotify = $api->withService(RadioAPI::SPOTIFY)
-    ->streamTitle()
-    ->setStreamUrl('https://stream.example.com/radio')
-    ->fetchArray();
+// Spotify integration for stream metadata
+$response = $api->getStreamTitle('https://stream.example.com/radio', RadioAPI::SPOTIFY);
 
-// Deezer integration
-$deezer = $api->withService(RadioAPI::DEEZER)
-    ->musicSearch()
-    ->search('Radiohead Creep')
-    ->fetchArray();
+// Deezer integration for music search
+$response = $api->searchMusic('Radiohead Creep', RadioAPI::DEEZER);
+
+// Auto-detect best service
+$response = $api->getStreamTitle('https://stream.example.com/radio', RadioAPI::AUTO);
 ```
 
 ### Available Service Constants
@@ -220,76 +287,75 @@ For radio platforms, use specific URL formats:
 
 **AzuraCast:**
 ```php
-$api->withService(RadioAPI::AZURACAST)
-    ->streamTitle()
-    ->setStreamUrl('https://azuracast.example.com/listen/stationid/mountpoint')
-    ->fetchArray();
+$response = $api->getStreamTitle(
+    'https://azuracast.example.com/listen/stationid/mountpoint',
+    RadioAPI::AZURACAST
+);
 ```
 
 **Live365:**
 ```php
-$api->withService(RadioAPI::LIVE365)
-    ->streamTitle()
-    ->setStreamUrl('https://streaming.live365.com/mountid')
-    ->fetchArray();
+$response = $api->getStreamTitle(
+    'https://streaming.live365.com/mountid',
+    RadioAPI::LIVE365
+);
 ```
 
 ## Error Handling
 
-### Exception Types
-
-The SDK provides three types of exceptions:
-
-- `ClientErrorException` - 4xx HTTP status codes (client errors)
-- `ServerErrorException` - 5xx HTTP status codes (server errors)  
-- `ApiErrorException` - Generic API errors
-
 ### Exception Handling
 
+The SDK uses a single `RadioAPIException` class for all API errors, with helper methods to categorize error types:
+
 ```php
-use RadioAPI\Exceptions\ApiErrorException;
-use RadioAPI\Exceptions\ClientErrorException;
-use RadioAPI\Exceptions\ServerErrorException;
+use RadioAPI\Exceptions\RadioAPIException;
 
 try {
-    $data = $api->streamTitle()
-        ->setStreamUrl('https://stream.example.com/radio')
-        ->fetchArray();
-} catch (ClientErrorException $e) {
-    // Handle 4xx errors
-    echo "Client error: {$e->getMessage()}";
+    $response = $api->getStreamTitle('https://stream.example.com/radio');
+} catch (RadioAPIException $e) {
+    if ($e->isClientError()) {
+        // Handle 4xx errors (bad request, unauthorized, etc.)
+        echo "Client error: {$e->getMessage()}";
+    } elseif ($e->isServerError()) {
+        // Handle 5xx errors (server issues)
+        echo "Server error: {$e->getMessage()}";
+    } elseif ($e->isNetworkError()) {
+        // Handle network connectivity issues
+        echo "Network error: {$e->getMessage()}";
+    }
+    
+    // Access detailed error information
     echo "Status code: {$e->getStatusCode()}";
     echo "Error data: " . json_encode($e->getErrorData());
-} catch (ServerErrorException $e) {
-    // Handle 5xx errors
-    echo "Server error: {$e->getMessage()}";
-} catch (ApiErrorException $e) {
-    // Handle other API errors
-    echo "API error: {$e->getMessage()}";
+    echo "Context: " . json_encode($e->getContext());
 }
 ```
 
 ### Exception Methods
 
-All exception classes provide:
+The `RadioAPIException` class provides:
 - `getMessage()` - Get the error message
 - `getStatusCode()` - Get the HTTP status code
 - `getErrorData()` - Get the original API error response
 - `getContext()` - Get additional context information
 - `hasErrorField(string $field)` - Check if error data contains a field
 - `getErrorField(string $field, $default = null)` - Get specific error field
+- `isClientError()` - Check if error is a 4xx client error
+- `isServerError()` - Check if error is a 5xx server error
+- `isNetworkError()` - Check if error is network-related
 
 ### Disable Exception Throwing
 
 ```php
-$api->setThrowOnApiErrors(false);
+// Configure to not throw exceptions
+$api = new RadioAPI('https://api.example.com', 'api-key', [
+    'throw_on_errors' => false
+]);
 
-$data = $api->streamTitle()
-    ->setStreamUrl('https://stream.example.com/radio')
-    ->fetchArray();
+$response = $api->getStreamTitle('https://stream.example.com/radio');
 
-if (isset($data['error'])) {
-    echo "Error occurred: {$data['error']}";
+if (!$response->isSuccess()) {
+    echo "Error occurred: " . $response->getError();
 }
 ```
 
@@ -304,72 +370,81 @@ $services = [
     RadioAPI::APPLE_MUSIC,
 ];
 
+$streamUrl = 'https://stream.example.com/radio';
+
 foreach ($services as $service) {
-    $data = $api->withService($service)
-        ->streamTitle()
-        ->setStreamUrl($streamUrl)
-        ->fetchArray();
-    
-    if (!empty($data['results']) || $data['metadataFound']) {
-        echo "Found metadata using: $service\n";
-        break;
+    try {
+        $response = $api->getStreamTitle($streamUrl, $service);
+        
+        if ($response->isSuccess() && $response->getCurrentTrack()) {
+            echo "Found metadata using: $service\n";
+            $track = $response->getCurrentTrack();
+            echo "Track: {$track['artist']} - {$track['song']}\n";
+            break;
+        }
+    } catch (RadioAPIException $e) {
+        // Log error and continue to next service
+        error_log("Service $service failed: " . $e->getMessage());
     }
 }
 ```
 
-### Language Configuration
+### Configuration Options
 
-Set response language for international metadata:
+Configure the client with various options:
 
 ```php
-$api->setLanguage('fr'); // French
-$api->setLanguage('de'); // German
-$api->setLanguage('es'); // Spanish
-$api->setLanguage('ja'); // Japanese
+// Performance-optimized configuration
+$api = new RadioAPI('https://api.example.com', 'api-key', [
+    'with_history' => false,    // Disable history for faster responses
+    'timeout' => 10,            // Shorter timeout for quick responses
+    'language' => 'en'          // Set response language
+]);
+
+// Multi-language support
+$api = new RadioAPI('https://api.example.com', 'api-key', [
+    'language' => 'fr'  // French, German (de), Spanish (es), Japanese (ja), etc.
+]);
 ```
 
-### History Control
-
-Control track history inclusion for performance:
+### Response Validation
 
 ```php
-// Disable history for faster responses
-$api->withHistory(false);
+$response = $api->getStreamTitle('https://stream.example.com/radio');
 
-// Re-enable history
-$api->withHistory(true);
-```
-
-### Metadata Validation
-
-```php
-$stream = $api->streamTitle()
-    ->setStreamUrl('https://stream.example.com/radio')
-    ->fetchArray();
-
-// Check if metadata was found
-if ($stream['metadataFound']) {
-    echo "Track: {$stream['artist']} - {$stream['song']}\n";
-}
-
-// Alternative using hasMetadata() method
-$streamObj = $api->streamTitle();
-$streamObj->setStreamUrl('https://stream.example.com/radio');
-$data = $streamObj->fetchArray();
-
-if ($streamObj->hasMetadata()) {
-    echo "Metadata available\n";
+// Check response status
+if ($response->isSuccess()) {
+    $currentTrack = $response->getCurrentTrack();
+    
+    if ($currentTrack) {
+        echo "Track: {$currentTrack['artist']} - {$currentTrack['song']}\n";
+    } else {
+        echo "No current track information available\n";
+    }
+    
+    // Check for history
+    $history = $response->getHistory();
+    if (!empty($history)) {
+        echo "Track history available: " . count($history) . " tracks\n";
+    }
+} else {
+    echo "Request failed: " . $response->getError() . "\n";
 }
 ```
 
 ### Raw Response Access
 
 ```php
-$streamObj = $api->streamTitle()
-    ->setStreamUrl('https://stream.example.com/radio');
+$response = $api->getStreamTitle('https://stream.example.com/radio');
 
-$response = $streamObj->fetchArray();
-$rawData = $streamObj->getData(); // Same as $response
+// Get complete raw response data
+$rawData = $response->getRawData();
+echo json_encode($rawData, JSON_PRETTY_PRINT);
+
+// Access specific fields from raw data
+if (isset($rawData['metadataFound']) && $rawData['metadataFound']) {
+    echo "Metadata found in raw response\n";
+}
 ```
 
 ## Best Practices
@@ -434,24 +509,26 @@ $rawData = $streamObj->getData(); // Same as $response
 ### Radio Station Dashboard
 
 ```php
-$api = new RadioAPI();
-$api->setBaseUrl($radioApiUrl)
-    ->setApiKey($apiKey)
-    ->withHistory(true);
+$api = new RadioAPI($radioApiUrl, $apiKey, ['with_history' => true]);
 
-$currentTrack = $api->withService(RadioAPI::SPOTIFY)
-    ->streamTitle()
-    ->setStreamUrl($stationStreamUrl)
-    ->fetchArray();
+$response = $api->getStreamTitle($stationStreamUrl, RadioAPI::SPOTIFY);
 
-if ($currentTrack['metadataFound']) {
-    echo "Now Playing: {$currentTrack['artist']} - {$currentTrack['song']}\n";
-    echo "Album: {$currentTrack['album']}\n";
-    echo "Duration: {$currentTrack['time']}\n";
+if ($response->isSuccess()) {
+    $currentTrack = $response->getCurrentTrack();
+    $streamInfo = $response->getStreamInfo();
     
-    if (!empty($currentTrack['history'])) {
+    if ($currentTrack) {
+        echo "Now Playing: {$currentTrack['artist']} - {$currentTrack['song']}\n";
+        echo "Album: {$currentTrack['album']}\n";
+        echo "Duration: {$currentTrack['time']}\n";
+    }
+    
+    echo "Stream: {$streamInfo['name']} ({$streamInfo['bitrate']}kbps)\n";
+    
+    $history = $response->getHistory();
+    if (!empty($history)) {
         echo "Recently Played:\n";
-        foreach (array_slice($currentTrack['history'], 0, 5) as $track) {
+        foreach (array_slice($history, 0, 5) as $track) {
             echo "- {$track['artist']} - {$track['song']} ({$track['relative_time']})\n";
         }
     }
@@ -462,18 +539,34 @@ if ($currentTrack['metadataFound']) {
 
 ```php
 $searchQuery = "indie rock 2024";
-$results = $api->withService(RadioAPI::SPOTIFY)
-    ->musicSearch()
-    ->search($searchQuery)
-    ->fetchArray();
+$response = $api->searchMusic($searchQuery, RadioAPI::SPOTIFY);
 
-if (!empty($results)) {
-    echo "Found: {$results['artist']} - {$results['title']}\n";
-    echo "Listen on Spotify: {$results['stream']}\n";
+if ($response->hasResults()) {
+    $track = $response->getFirstTrack();
+    echo "Found: {$track['artist']} - {$track['title']}\n";
+    echo "Listen on Spotify: {$track['stream']}\n";
     
-    if (!empty($results['artwork']['large'])) {
-        echo "Artwork: {$results['artwork']['large']}\n";
+    if (!empty($track['artwork']['large'])) {
+        echo "Artwork: {$track['artwork']['large']}\n";
     }
+}
+```
+
+### Image Color Analysis
+
+```php
+$imageUrl = 'https://example.com/album-cover.jpg';
+$response = $api->getImageColors($imageUrl);
+
+if ($response->isSuccess()) {
+    echo "Dominant Color: " . $response->getDominantColorHex() . "\n";
+    echo "Text Color: " . $response->getTextColorHex() . "\n";
+    
+    // Use in CSS
+    echo "CSS: background-color: " . $response->getDominantColorHex() . "; color: " . $response->getTextColorHex() . ";\n";
+    
+    // Use in Flutter
+    echo "Flutter: Color(" . $response->getDominantColorFlutterHex() . ")\n";
 }
 ```
 
@@ -484,8 +577,7 @@ class RadioMetadataService {
     private RadioAPI $api;
     
     public function __construct(string $baseUrl, string $apiKey) {
-        $this->api = new RadioAPI();
-        $this->api->setBaseUrl($baseUrl)->setApiKey($apiKey);
+        $this->api = new RadioAPI($baseUrl, $apiKey);
     }
     
     public function getCurrentTrack(string $streamUrl, array $preferredServices = []): ?array {
@@ -497,15 +589,15 @@ class RadioMetadataService {
         
         foreach ($services as $service) {
             try {
-                $data = $this->api->withService($service)
-                    ->streamTitle()
-                    ->setStreamUrl($streamUrl)
-                    ->fetchArray();
-                    
-                if ($data['metadataFound']) {
-                    return $data;
+                $response = $this->api->getStreamTitle($streamUrl, $service);
+                
+                if ($response->isSuccess()) {
+                    $track = $response->getCurrentTrack();
+                    if ($track) {
+                        return $track;
+                    }
                 }
-            } catch (Exception $e) {
+            } catch (RadioAPIException $e) {
                 // Log error and continue to next service
                 error_log("Service $service failed: " . $e->getMessage());
             }
@@ -539,15 +631,24 @@ class RadioMetadataService {
 Enable detailed error information:
 
 ```php
-$api->setThrowOnApiErrors(true);
+$api = new RadioAPI('https://api.example.com', 'api-key', [
+    'throw_on_errors' => true
+]);
 
 try {
-    $data = $api->streamTitle()->setStreamUrl($url)->fetchArray();
-} catch (ApiErrorException $e) {
+    $response = $api->getStreamTitle($url);
+} catch (RadioAPIException $e) {
     echo "Error: " . $e->getMessage() . "\n";
     echo "Status: " . $e->getStatusCode() . "\n";
     echo "Context: " . json_encode($e->getContext()) . "\n";
     echo "Error Data: " . json_encode($e->getErrorData()) . "\n";
+    
+    // Check error type
+    if ($e->isClientError()) {
+        echo "This is a client error (4xx)\n";
+    } elseif ($e->isServerError()) {
+        echo "This is a server error (5xx)\n";
+    }
 }
 ```
 
