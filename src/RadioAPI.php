@@ -218,7 +218,7 @@ class RadioAPI
     public function getImageColors(string $imageUrl): ColorResponse
     {
         $params = [
-            'image_url' => $imageUrl,
+            'url' => $imageUrl,  // Fixed: API expects 'url' not 'image_url'
             'language' => $this->language,
         ];
 
@@ -251,13 +251,15 @@ class RadioAPI
             'language' => $this->language,
         ];
 
-        // Use service parameter or fall back to mount
+        // Build the endpoint path with service
         $serviceToUse = $service ?? $this->mount;
+        $endpoint = '/musicsearch';
+        
         if ($serviceToUse) {
-            $params['service'] = $serviceToUse;
+            $endpoint .= '/' . $serviceToUse;
         }
 
-        $data = $this->httpWrapper->get('/musicsearch', $params);
+        $data = $this->httpWrapper->get($endpoint, $params);
         return new MusicSearchResponse($data);
     }
 
@@ -282,18 +284,20 @@ class RadioAPI
     public function getStreamTitle(string $streamUrl, ?string $service = null): StreamTitleResponse
     {
         $params = [
-            'stream_url' => $streamUrl,
+            'url' => $streamUrl,  // Fixed: API expects 'url' not 'stream_url'
             'language' => $this->language,
             'with_history' => $this->withHistory ? 'true' : 'false',
         ];
 
-        // Use service parameter or fall back to mount
+        // Build the endpoint path with service
         $serviceToUse = $service ?? $this->mount;
+        $endpoint = '/streamtitle';
+        
         if ($serviceToUse) {
-            $params['service'] = $serviceToUse;
+            $endpoint .= '/' . $serviceToUse;
         }
 
-        $data = $this->httpWrapper->get('/streamtitle', $params);
+        $data = $this->httpWrapper->get($endpoint, $params);
         return new StreamTitleResponse($data);
     }
 

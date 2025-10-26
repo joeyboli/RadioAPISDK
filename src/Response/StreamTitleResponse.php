@@ -66,7 +66,32 @@ class StreamTitleResponse implements ResponseInterface
      */
     public function getCurrentTrack(): ?array
     {
-        return $this->data['current_track'] ?? $this->data['track'] ?? null;
+        // Check if metadata was found
+        if (!($this->data['metadataFound'] ?? false)) {
+            return null;
+        }
+
+        // Extract track information from the response
+        $track = [];
+        
+        // Basic track info (always available when metadata is found)
+        if (isset($this->data['artist'])) $track['artist'] = $this->data['artist'];
+        if (isset($this->data['song'])) $track['song'] = $this->data['song'];
+        
+        // Extended track info (available with service integration)
+        if (isset($this->data['album'])) $track['album'] = $this->data['album'];
+        if (isset($this->data['genre'])) $track['genre'] = $this->data['genre'];
+        if (isset($this->data['artwork'])) $track['artwork'] = $this->data['artwork'];
+        if (isset($this->data['year'])) $track['year'] = $this->data['year'];
+        if (isset($this->data['duration'])) $track['duration'] = $this->data['duration'];
+        if (isset($this->data['elapsed'])) $track['elapsed'] = $this->data['elapsed'];
+        if (isset($this->data['remaining'])) $track['remaining'] = $this->data['remaining'];
+        if (isset($this->data['time'])) $track['time'] = $this->data['time'];
+        if (isset($this->data['stream'])) $track['stream'] = $this->data['stream'];
+        if (isset($this->data['lyrics'])) $track['lyrics'] = $this->data['lyrics'];
+        if (isset($this->data['explicit'])) $track['explicit'] = $this->data['explicit'];
+        
+        return !empty($track) ? $track : null;
     }
 
     /**
@@ -88,7 +113,14 @@ class StreamTitleResponse implements ResponseInterface
      */
     public function getStreamInfo(): array
     {
-        return $this->data['stream_info'] ?? $this->data['info'] ?? [];
+        $streamInfo = [];
+        
+        // Extract stream information from the response
+        if (isset($this->data['name'])) $streamInfo['name'] = $this->data['name'];
+        if (isset($this->data['bitrate'])) $streamInfo['bitrate'] = $this->data['bitrate'];
+        if (isset($this->data['format'])) $streamInfo['format'] = $this->data['format'];
+        
+        return $streamInfo;
     }
 
     /**
@@ -99,7 +131,7 @@ class StreamTitleResponse implements ResponseInterface
     public function getCurrentTitle(): ?string
     {
         $track = $this->getCurrentTrack();
-        return $track['title'] ?? null;
+        return $track['song'] ?? $track['title'] ?? null;
     }
 
     /**
