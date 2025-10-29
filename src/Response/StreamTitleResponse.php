@@ -46,7 +46,7 @@ class StreamTitleResponse implements ResponseInterface
      */
     public function isSuccess(): bool
     {
-        return !isset($this->data['error']) && !empty($this->data);
+        return !isset($this->data['error']);
     }
 
     /**

@@ -33,6 +33,13 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class RadioAPI
 {
     /**
+     * Shared HTTP client for connection reuse across instances
+     *
+     * @var HttpClientInterface|null
+     */
+    private static ?HttpClientInterface $sharedHttpClient = null;
+
+    /**
      * HTTP client for making API requests
      *
      * @var HttpClientInterface
@@ -176,16 +183,17 @@ class RadioAPI
             throw new \InvalidArgumentException('Language must be a valid ISO 639-1 code (e.g., "en", "fr")');
         }
 
-        // Create HTTP client with default options
-        $httpClientOptions = [
-            'timeout' => $options['timeout'] ?? 30,
-            'headers' => [
-                'User-Agent' => $options['user_agent'] ?? 'RadioAPI-PHP/2.0',
-                'Accept' => 'application/json',
-            ],
-        ];
-
-        $this->httpClient = HttpClient::create($httpClientOptions);
+        // Use shared HTTP client for better connection reuse, or create new one
+        if ($options['use_shared_client'] ?? true) {
+            if (self::$sharedHttpClient === null) {
+                self::$sharedHttpClient = $this->createOptimizedHttpClient($options);
+            }
+            $this->httpClient = self::$sharedHttpClient;
+            $httpClientOptions = []; // No additional options needed for shared client
+        } else {
+            $this->httpClient = $this->createOptimizedHttpClient($options);
+            $httpClientOptions = [];
+        }
         
         // Initialize HTTP wrapper with configuration
         $this->httpWrapper = new HttpClientWrapper(
@@ -194,6 +202,32 @@ class RadioAPI
             $this->apiKey,
             $httpClientOptions
         );
+    }
+
+    /**
+     * Create an optimized HTTP client for better performance
+     *
+     * @param array $options Configuration options
+     * @return HttpClientInterface The configured HTTP client
+     */
+    private function createOptimizedHttpClient(array $options): HttpClientInterface
+    {
+        $httpClientOptions = [
+            'timeout' => $options['timeout'] ?? 30,
+            'max_duration' => $options['max_duration'] ?? 0,
+            'headers' => [
+                'User-Agent' => $options['user_agent'] ?? 'RadioAPI-PHP/2.0',
+                'Accept' => 'application/json',
+                'Connection' => 'keep-alive',
+            ],
+            // Performance optimizations supported by Symfony HttpClient
+            'http_version' => '2.0', // Use HTTP/2 if available
+            'verify_peer' => true,
+            'verify_host' => true,
+            'max_redirects' => 3, // Limit redirects for performance
+        ];
+
+        return HttpClient::create($httpClientOptions);
     }
 
 

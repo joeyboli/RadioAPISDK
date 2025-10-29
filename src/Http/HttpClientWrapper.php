@@ -66,11 +66,11 @@ class HttpClientWrapper
             $params['api_key'] = $this->apiKey;
         }
 
-        $url = "{$this->baseUrl}/" . ltrim($endpoint, '/');
+        // Optimize URL building - avoid multiple string operations
+        $url = $this->baseUrl . '/' . ltrim($endpoint, '/');
         
         if (!empty($params)) {
-            $queryString = http_build_query($params);
-            $url = "{$url}?{$queryString}";
+            $url .= '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
         }
 
         return $url;
@@ -86,12 +86,21 @@ class HttpClientWrapper
     private function handleResponse(ResponseInterface $response): array
     {
         try {
+            $statusCode = $response->getStatusCode();
+            
+            // Quick status code check before parsing JSON
+            if ($statusCode >= 400) {
+                $data = $response->toArray(false);
+                throw $this->createException($data, $statusCode, $response->getInfo('url'));
+            }
+            
             // Parse response to array (false = don't throw on HTTP errors)
             $data = $response->toArray(false);
-            $statusCode = $response->getStatusCode();
 
-            // Check for API errors in the response
-            $this->validateApiResponse($data, $statusCode, $response->getInfo('url'));
+            // Lightweight error check - only check for explicit error field
+            if (isset($data['error'])) {
+                throw $this->createException($data, $statusCode, $response->getInfo('url'));
+            }
 
             return $data;
         } catch (ExceptionInterface $e) {
@@ -105,31 +114,7 @@ class HttpClientWrapper
         }
     }
 
-    /**
-     * Validate API response and throw appropriate exceptions for error responses
-     *
-     * @param array $data The response data
-     * @param int $statusCode The HTTP status code
-     * @param string $url The request URL for context
-     * @throws RadioAPIException When API returns error response
-     */
-    private function validateApiResponse(array $data, int $statusCode, string $url): void
-    {
-        // Check for HTTP error status codes
-        if ($statusCode >= 400) {
-            throw $this->createException($data, $statusCode, $url);
-        }
 
-        // Check for explicit error field in response
-        if (isset($data['error'])) {
-            throw $this->createException($data, $statusCode, $url);
-        }
-
-        // Check for error status codes in response data
-        if (isset($data['status']) && $data['status'] >= 400) {
-            throw $this->createException($data, $data['status'], $url);
-        }
-    }
 
     /**
      * Create a RadioAPIException based on error data and status code
@@ -141,18 +126,9 @@ class HttpClientWrapper
      */
     private function createException(array $errorData, int $statusCode, string $url): RadioAPIException
     {
-        // Extract error message from various possible fields
-        $message = $errorData['error'] 
-            ?? $errorData['message'] 
-            ?? $errorData['detail'] 
-            ?? 'Unknown API error';
+        // Fast error message extraction - check most common field first
+        $message = $errorData['error'] ?? $errorData['message'] ?? $errorData['detail'] ?? 'Unknown API error';
 
-        // Build context information
-        $context = [
-            'url' => $url,
-            'status_code' => $statusCode,
-        ];
-
-        return new RadioAPIException($message, $statusCode, $errorData, $context);
+        return new RadioAPIException($message, $statusCode, $errorData, ['url' => $url, 'status_code' => $statusCode]);
     }
 }
