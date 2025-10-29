@@ -263,7 +263,7 @@ class RadioAPI
         $endpoint = '/musicsearch';
         
         if ($serviceToUse) {
-            $endpoint .= '/' . $serviceToUse;
+            $endpoint = "/musicsearch/{$serviceToUse}";
         }
 
         $data = $this->httpWrapper->get($endpoint, $params);
@@ -303,15 +303,17 @@ class RadioAPI
         $params = [
             'url' => $streamUrl,  // Fixed: API expects 'url' not 'stream_url'
             'language' => $this->language,
-            'with_history' => $historyEnabled ? 'true' : 'false',
         ];
+        
+        // Add history parameter - API expects 'history' not 'with_history'
+        $params['history'] = $historyEnabled ? 'true' : 'false';
 
         // Build the endpoint path with service
         $serviceToUse = $service ?? $this->mount;
         $endpoint = '/streamtitle';
         
         if ($serviceToUse) {
-            $endpoint .= '/' . $serviceToUse;
+            $endpoint = "/streamtitle/{$serviceToUse}";
         }
 
         $data = $this->httpWrapper->get($endpoint, $params);

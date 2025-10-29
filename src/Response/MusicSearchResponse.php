@@ -143,9 +143,7 @@ class MusicSearchResponse implements ResponseInterface
     public function getTracksByService(string $service): array
     {
         $tracks = $this->getTracks();
-        return array_filter($tracks, function ($track) use ($service) {
-            return isset($track['service']) && $track['service'] === $service;
-        });
+        return array_filter($tracks, fn($track) => isset($track['service']) && $track['service'] === $service);
     }
 
     /**

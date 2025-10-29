@@ -43,7 +43,7 @@ class HttpClientWrapper
         } catch (ExceptionInterface $e) {
             // Convert HTTP client exceptions to RadioAPIException
             throw new RadioAPIException(
-                'HTTP request failed: ' . $e->getMessage(),
+                "HTTP request failed: {$e->getMessage()}",
                 0,
                 [],
                 ['url' => $url, 'endpoint' => $endpoint],
@@ -66,10 +66,11 @@ class HttpClientWrapper
             $params['api_key'] = $this->apiKey;
         }
 
-        $url = $this->baseUrl . '/' . ltrim($endpoint, '/');
+        $url = "{$this->baseUrl}/" . ltrim($endpoint, '/');
         
         if (!empty($params)) {
-            $url .= '?' . http_build_query($params);
+            $queryString = http_build_query($params);
+            $url = "{$url}?{$queryString}";
         }
 
         return $url;
@@ -95,7 +96,7 @@ class HttpClientWrapper
             return $data;
         } catch (ExceptionInterface $e) {
             throw new RadioAPIException(
-                'Failed to parse response: ' . $e->getMessage(),
+                "Failed to parse response: {$e->getMessage()}",
                 $response->getStatusCode(),
                 [],
                 ['url' => $response->getInfo('url')],
