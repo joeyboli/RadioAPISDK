@@ -234,6 +234,7 @@ class RadioAPI
      *
      * @param string $query The search query (artist, track, album, etc.)
      * @param string|null $service Optional service to search (use class constants like RadioAPI::SPOTIFY)
+     * @param string|null $language Override language setting for this request (null = use default)
      * @return MusicSearchResponse Response object containing search results
      * @throws RadioAPIException When the API request fails or returns an error
      *
@@ -242,13 +243,19 @@ class RadioAPI
      * $response = $api->searchMusic('The Beatles - Hey Jude', RadioAPI::SPOTIFY);
      * $tracks = $response->getTracks();
      * $firstTrack = $response->getFirstTrack();
+     * 
+     * // Search with specific language override
+     * $response = $api->searchMusic('The Beatles - Hey Jude', RadioAPI::SPOTIFY, 'fr');
      * ```
      */
-    public function searchMusic(string $query, ?string $service = null): MusicSearchResponse
+    public function searchMusic(string $query, ?string $service = null, ?string $language = null): MusicSearchResponse
     {
+        // Use override parameter if provided, otherwise use instance setting
+        $languageToUse = $language ?? $this->language;
+        
         $params = [
             'query' => $query,
-            'language' => $this->language,
+            'language' => $languageToUse,
         ];
 
         // Build the endpoint path with service
@@ -271,6 +278,7 @@ class RadioAPI
      *
      * @param string $streamUrl The URL of the radio stream to analyze
      * @param string|null $service Optional service/platform hint (use class constants like RadioAPI::AZURACAST)
+     * @param bool|null $withHistory Override history setting for this request (null = use default)
      * @return StreamTitleResponse Response object containing stream metadata
      * @throws RadioAPIException When the API request fails or returns an error
      *
@@ -279,14 +287,23 @@ class RadioAPI
      * $response = $api->getStreamTitle('https://stream.example.com/radio');
      * $currentTrack = $response->getCurrentTrack();
      * $history = $response->getHistory();
+     * 
+     * // Disable history for this specific request
+     * $response = $api->getStreamTitle('https://stream.example.com/radio', null, false);
+     * 
+     * // Force enable history for this specific request
+     * $response = $api->getStreamTitle('https://stream.example.com/radio', RadioAPI::SPOTIFY, true);
      * ```
      */
-    public function getStreamTitle(string $streamUrl, ?string $service = null): StreamTitleResponse
+    public function getStreamTitle(string $streamUrl, ?string $service = null, ?bool $withHistory = null): StreamTitleResponse
     {
+        // Use override parameter if provided, otherwise use instance setting
+        $historyEnabled = $withHistory ?? $this->withHistory;
+        
         $params = [
             'url' => $streamUrl,  // Fixed: API expects 'url' not 'stream_url'
             'language' => $this->language,
-            'with_history' => $this->withHistory ? 'true' : 'false',
+            'with_history' => $historyEnabled ? 'true' : 'false',
         ];
 
         // Build the endpoint path with service
