@@ -1,60 +1,62 @@
 # RadioAPI PHP Client
 
-A modern, fluent PHP client for the RadioAPI service. Get radio stream metadata, search music across streaming platforms, and extract dominant colors from images with a clean, developer-friendly API.
+A clean, modern PHP client for RadioAPI that makes working with radio streams and music data feel effortless. Get real-time stream metadata, search across all the major streaming platforms, and even pull color palettes from album artwork—all with an API that just works.
 
 [![PHP Version](https://img.shields.io/badge/php-%5E8.1-blue)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Features
+## What You Can Do
 
-- 🎵 **Stream Metadata** - Get current track information from radio streams
-- 🔍 **Music Search** - Search across Spotify, Deezer, Apple Music, and more
-- 🎨 **Color Extraction** - Extract dominant colors from album artwork
-- ⚡ **Fluent API** - Clean, chainable method calls
-- 🛡️ **Type Safe** - Full PHP 8.1+ type declarations
-- 📦 **Zero Config** - Works out of the box
-- 🔄 **Built on ElliePHP** - Leverages the powerful ElliePHP HttpClient
+- **Stream Metadata** - Pull current track info from any radio stream
+- **Music Search** - Find tracks across Spotify, Deezer, Apple Music, and more
+- **Color Extraction** - Grab dominant colors from album art for theming
+- **Fluent API** - Chain methods together naturally
+- **Type Safe** - Full PHP 8.1+ type declarations throughout
+- **Zero Config** - Just install and go
+- **Built on ElliePHP** - Powered by the rock-solid ElliePHP HttpClient
 
-## Requirements
+## What You'll Need
 
-- PHP 8.1 or higher
+- PHP 8.1 or newer
 - ElliePHP HttpClient
 
-## Installation
+## Getting Started
 
-Install via Composer:
+Pop this into your terminal:
 
 ```bash
-composer require radioapi/radioapi-php
+composer require joeyboli/radioapisdk
 ```
 
-## Quick Start
+## Quick Example
+
+Here's the basic idea:
 
 ```php
 <?php
 
 use RadioAPI\RadioAPI;
 
-// Create a client instance
+// Set up your client
 $api = RadioAPI::make('https://api.radioapi.io', 'your-api-key')
     ->language('en')
     ->service(RadioAPI::SPOTIFY)
     ->withHistory();
 
-// Get current track from a radio stream
+// Find out what's playing on a stream
 $stream = $api->getStreamTitle('https://stream.example.com/radio');
 
 if ($stream->isSuccess()) {
     $track = $stream->getCurrentTrack();
     echo "{$track['artist']} - {$track['song']}\n";
     
-    // Get history if available
+    // Check what played before
     foreach ($stream->getHistory() as $historical) {
         echo "Previously: {$historical['artist']} - {$historical['song']}\n";
     }
 }
 
-// Search for music
+// Search for a specific track
 $search = $api->searchMusic('The Beatles - Hey Jude');
 
 if ($search->hasResults()) {
@@ -62,7 +64,7 @@ if ($search->hasResults()) {
     echo "Found: {$firstTrack['artist']} - {$firstTrack['title']}\n";
 }
 
-// Extract colors from album artwork
+// Pull colors from album artwork
 $colors = $api->getImageColors('https://example.com/album-art.jpg');
 
 if ($colors->isSuccess()) {
@@ -71,37 +73,41 @@ if ($colors->isSuccess()) {
 }
 ```
 
-## Configuration
+## Setting Things Up
 
-### Basic Configuration
+### The Basics
+
+You've got a couple ways to create your client:
 
 ```php
 use RadioAPI\RadioAPI;
 
-// Simple instantiation
+// Simple version
 $api = new RadioAPI('https://api.radioapi.io', 'your-api-key');
 
-// Fluent instantiation with configuration
+// Or chain some config options
 $api = RadioAPI::make('https://api.radioapi.io', 'your-api-key')
-    ->language('en')           // Set response language
-    ->service(RadioAPI::SPOTIFY)  // Set default service
-    ->withHistory()            // Enable track history
-    ->timeout(60);             // Set request timeout
+    ->language('en')           // Response language
+    ->service(RadioAPI::SPOTIFY)  // Default service
+    ->withHistory()            // Include track history
+    ->timeout(60);             // Request timeout in seconds
 ```
 
-### Available Configuration Methods
+### Configuration Options
 
-| Method | Description | Default |
+Here's what you can tweak:
+
+| Method | What It Does | Default |
 |--------|-------------|---------|
 | `language(string $code)` | Set language for responses (ISO 639-1) | `'en'` |
-| `service(string $service)` | Set default service/platform | `null` |
-| `withHistory(bool $enabled)` | Enable/disable track history | `true` |
-| `withoutHistory()` | Disable track history | - |
-| `timeout(int $seconds)` | Set request timeout | `30` |
+| `service(string $service)` | Choose your default platform | `null` |
+| `withHistory(bool $enabled)` | Turn track history on or off | `true` |
+| `withoutHistory()` | Quick way to disable history | - |
+| `timeout(int $seconds)` | How long to wait for responses | `30` |
 
-### Service Constants
+### Available Services
 
-Music streaming services:
+Music streaming platforms you can use:
 
 ```php
 RadioAPI::SPOTIFY         // Spotify
@@ -111,7 +117,7 @@ RadioAPI::YOUTUBE_MUSIC   // YouTube Music
 RadioAPI::FLO_MUSIC       // FLO Music
 RadioAPI::LINE_MUSIC      // LINE Music
 RadioAPI::KKBOX_MUSIC     // KKBOX
-RadioAPI::AUTO            // Auto-detect
+RadioAPI::AUTO            // Let the API figure it out
 ```
 
 Radio platforms:
@@ -122,11 +128,11 @@ RadioAPI::LIVE365         // Live365
 RadioAPI::RADIOKING       // RadioKing
 ```
 
-## API Methods
+## What You Can Do With It
 
-### Get Stream Title
+### Get Stream Info
 
-Retrieve current track information from a radio stream.
+Pull the current track from any radio stream:
 
 ```php
 public function getStreamTitle(
@@ -136,24 +142,24 @@ public function getStreamTitle(
 ): StreamTitleResponse
 ```
 
-**Parameters:**
-- `$streamUrl` - URL of the radio stream
-- `$service` - Optional service override (use class constants)
-- `$withHistory` - Optional history override
+**What you pass in:**
+- `$streamUrl` - The radio stream URL
+- `$service` - Optional: override the default service
+- `$withHistory` - Optional: override history setting
 
-**Example:**
+**Examples:**
 
 ```php
 // Basic usage
 $response = $api->getStreamTitle('https://stream.example.com/radio');
 
-// With service override
+// Force a specific service
 $response = $api->getStreamTitle(
     'https://stream.example.com/radio',
     RadioAPI::SPOTIFY
 );
 
-// Disable history for this request
+// Skip history for this one request
 $response = $api->getStreamTitle(
     'https://stream.example.com/radio',
     null,
@@ -161,9 +167,9 @@ $response = $api->getStreamTitle(
 );
 ```
 
-### Search Music
+### Search for Music
 
-Search for music tracks across streaming services.
+Find tracks across streaming services:
 
 ```php
 public function searchMusic(
@@ -173,24 +179,24 @@ public function searchMusic(
 ): MusicSearchResponse
 ```
 
-**Parameters:**
-- `$query` - Search query (artist, track, album, etc.)
-- `$service` - Optional service to search
-- `$language` - Optional language override
+**What you pass in:**
+- `$query` - What you're looking for
+- `$service` - Optional: which platform to search
+- `$language` - Optional: override the language
 
-**Example:**
+**Examples:**
 
 ```php
-// Basic search
+// Just search
 $response = $api->searchMusic('The Beatles - Hey Jude');
 
-// Search specific service
+// Search on Spotify specifically
 $response = $api->searchMusic(
     'The Beatles - Hey Jude',
     RadioAPI::SPOTIFY
 );
 
-// Search with language override
+// Search in French
 $response = $api->searchMusic(
     'The Beatles - Hey Jude',
     RadioAPI::SPOTIFY,
@@ -198,16 +204,16 @@ $response = $api->searchMusic(
 );
 ```
 
-### Get Image Colors
+### Extract Colors from Images
 
-Extract dominant colors from an image URL.
+Pull color palettes from any image URL:
 
 ```php
 public function getImageColors(string $imageUrl): ColorResponse
 ```
 
-**Parameters:**
-- `$imageUrl` - URL of the image to analyze
+**What you pass in:**
+- `$imageUrl` - The image URL to analyze
 
 **Example:**
 
@@ -221,43 +227,43 @@ if ($response->isSuccess()) {
 }
 ```
 
-## Response Objects
+## Working with Responses
 
 ### StreamTitleResponse
 
-Methods for accessing stream metadata:
+Everything you need from stream metadata:
 
 ```php
-// Check success
+// Check if it worked
 $response->isSuccess(): bool
 $response->getError(): ?string
 
-// Current track
+// Current track info
 $response->getCurrentTrack(): ?array
 $response->getArtist(): ?string
 $response->getTitle(): ?string
 $response->getAlbum(): ?string
 
-// History
+// History stuff
 $response->getHistory(): array
 $response->hasHistory(): bool
 $response->getHistoryCount(): int
 $response->getLastTrack(): ?array
 
-// Stream info
+// Stream details
 $response->getStreamInfo(): array
 
-// Raw data
+// Raw data if you need it
 $response->getRawData(): array
 ```
 
-**Example:**
+**Real example:**
 
 ```php
 $response = $api->getStreamTitle('https://stream.example.com/radio');
 
 if ($response->isSuccess()) {
-    // Get current track details
+    // Get the details
     $artist = $response->getArtist();
     $title = $response->getTitle();
     $album = $response->getAlbum();
@@ -267,7 +273,7 @@ if ($response->isSuccess()) {
         echo " (from $album)";
     }
     
-    // Check history
+    // Check what played before
     if ($response->hasHistory()) {
         echo "\nPreviously played:\n";
         foreach ($response->getHistory() as $track) {
@@ -281,10 +287,10 @@ if ($response->isSuccess()) {
 
 ### MusicSearchResponse
 
-Methods for accessing search results:
+All your search result tools:
 
 ```php
-// Check success
+// Status checks
 $response->isSuccess(): bool
 $response->getError(): ?string
 $response->hasResults(): bool
@@ -294,12 +300,12 @@ $response->getTracks(): array
 $response->getFirstTrack(): ?array
 $response->getResultCount(): int
 
-// Filter and transform
+// Filter and transform results
 $response->getTracksByService(string $service): array
 $response->filter(callable $callback): array
 $response->map(callable $callback): array
 
-// Metadata
+// Info about the search
 $response->getQuery(): ?string
 $response->getService(): ?string
 
@@ -307,60 +313,60 @@ $response->getService(): ?string
 $response->getRawData(): array
 ```
 
-**Example:**
+**Real example:**
 
 ```php
 $response = $api->searchMusic('The Beatles - Hey Jude');
 
 if ($response->hasResults()) {
-    // Get all tracks
+    // Loop through everything
     foreach ($response->getTracks() as $track) {
         echo "{$track['artist']} - {$track['title']}\n";
     }
     
-    // Get only first result
+    // Just grab the first one
     $first = $response->getFirstTrack();
     
-    // Filter results
+    // Filter for explicit tracks
     $explicit = $response->filter(fn($t) => $t['explicit'] ?? false);
     
-    // Transform results
+    // Simplify the data
     $simplified = $response->map(fn($t) => [
         'artist' => $t['artist'],
         'title' => $t['title']
     ]);
     
-    // Get tracks from specific service
+    // Get results from just Spotify
     $spotifyTracks = $response->getTracksByService('spotify');
 }
 ```
 
 ### ColorResponse
 
-Methods for accessing color data:
+Color extraction made easy:
 
 ```php
-// Check success
+// Success check
 $response->isSuccess(): bool
 $response->getError(): ?string
 
-// Hex colors
+// Hex format
 $response->getDominantColorHex(): ?string
 $response->getTextColorHex(): ?string
 
-// RGB colors
+// RGB format
 $response->getDominantColorRgb(): ?array
 $response->getTextColorRgb(): ?array
 
-// CSS colors
+// CSS format
 $response->getDominantColorCss(): ?string
 $response->getTextColorCss(): ?string
 
-// Flutter colors
+// Flutter format (if you need it)
 $response->getDominantColorFlutterHex(): ?string
 $response->getTextColorFlutterHex(): ?string
 
-// Palette
+// Full color palette
 $response->getPalette(): array
 $response->getPaletteColor(int $index): ?array
 $response->getPaletteCount(): int
@@ -369,26 +375,26 @@ $response->getPaletteCount(): int
 $response->getRawData(): array
 ```
 
-**Example:**
+**Real example:**
 
 ```php
 $response = $api->getImageColors('https://example.com/album-art.jpg');
 
 if ($response->isSuccess()) {
-    // Get colors in different formats
+    // Get colors in whatever format you need
     $hex = $response->getDominantColorHex();        // "#FF5733"
     $rgb = $response->getDominantColorRgb();        // ['r' => 255, 'g' => 87, 'b' => 51]
     $css = $response->getDominantColorCss();        // "rgb(255, 87, 51)"
     $flutter = $response->getDominantColorFlutterHex(); // "0xFFFF5733"
     
-    // Use in HTML
+    // Use it in your HTML
     echo "<div style='background-color: $css;'>";
     echo "  <span style='color: " . $response->getTextColorCss() . ";'>";
     echo "    Content with good contrast";
     echo "  </span>";
     echo "</div>";
     
-    // Get full palette
+    // Or grab the whole palette
     $palette = $response->getPalette();
     foreach ($palette as $color) {
         echo "Color: {$color['hex']}\n";
@@ -396,11 +402,11 @@ if ($response->isSuccess()) {
 }
 ```
 
-## Error Handling
+## When Things Go Wrong
 
 ### RadioAPIException
 
-All API errors throw a `RadioAPIException` with detailed information:
+All errors come through as a `RadioAPIException` with helpful info:
 
 ```php
 use RadioAPI\Exceptions\RadioAPIException;
@@ -408,38 +414,38 @@ use RadioAPI\Exceptions\RadioAPIException;
 try {
     $response = $api->getStreamTitle('https://invalid-url.example.com');
 } catch (RadioAPIException $e) {
-    // Get error details
-    echo $e->getMessage();              // Human-readable message
+    // Get the details
+    echo $e->getMessage();              // Simple error message
     echo $e->getStatusCode();           // HTTP status code
-    echo $e->getDetailedMessage();      // Full details with context
+    echo $e->getDetailedMessage();      // Full context
     
-    // Check error type
+    // Figure out what went wrong
     if ($e->isClientError()) {
-        // 4xx error - problem with request
+        // 4xx - something wrong with your request
     }
     if ($e->isServerError()) {
-        // 5xx error - problem with API server
+        // 5xx - API server issue
     }
     if ($e->isNetworkError()) {
-        // Connection/network error
+        // Connection problems
     }
     
-    // Specific status checks
+    // Check specific issues
     if ($e->isUnauthorized()) {
-        // 401 - Invalid API key
+        // 401 - bad API key
     }
     if ($e->isRateLimited()) {
-        // 429 - Too many requests
+        // 429 - slow down
     }
     if ($e->isNotFound()) {
-        // 404 - Resource not found
+        // 404 - doesn't exist
     }
     
-    // Get additional data
-    $errorData = $e->getErrorData();    // API error response
+    // Dig deeper if needed
+    $errorData = $e->getErrorData();    // API response
     $context = $e->getContext();        // Request context
     
-    // Check specific error field
+    // Check specific error fields
     if ($e->hasErrorField('detail')) {
         $detail = $e->getErrorField('detail');
     }
@@ -448,26 +454,26 @@ try {
 
 ### Exception Methods
 
-| Method | Description | Returns |
+| Method | What It Does | Returns |
 |--------|-------------|---------|
-| `getMessage()` | Get error message | `string` |
-| `getStatusCode()` | Get HTTP status code | `int` |
-| `getDetailedMessage()` | Get detailed message with context | `string` |
-| `getErrorData()` | Get API error response data | `array` |
-| `getContext()` | Get request context | `array` |
-| `isClientError()` | Check if 4xx error | `bool` |
-| `isServerError()` | Check if 5xx error | `bool` |
-| `isNetworkError()` | Check if network error | `bool` |
-| `isUnauthorized()` | Check if 401 | `bool` |
-| `isForbidden()` | Check if 403 | `bool` |
-| `isNotFound()` | Check if 404 | `bool` |
-| `isRateLimited()` | Check if 429 | `bool` |
+| `getMessage()` | Basic error message | `string` |
+| `getStatusCode()` | HTTP status code | `int` |
+| `getDetailedMessage()` | Full details with context | `string` |
+| `getErrorData()` | API error response | `array` |
+| `getContext()` | Request context | `array` |
+| `isClientError()` | Check for 4xx errors | `bool` |
+| `isServerError()` | Check for 5xx errors | `bool` |
+| `isNetworkError()` | Check for connection issues | `bool` |
+| `isUnauthorized()` | Check for 401 | `bool` |
+| `isForbidden()` | Check for 403 | `bool` |
+| `isNotFound()` | Check for 404 | `bool` |
+| `isRateLimited()` | Check for 429 | `bool` |
 | `hasErrorField(string)` | Check if error field exists | `bool` |
 | `getErrorField(string, mixed)` | Get error field value | `mixed` |
 
-## Complete Examples
+## Real-World Examples
 
-### Example 1: Radio Station Monitor
+### Radio Station Monitor
 
 ```php
 <?php
@@ -512,7 +518,7 @@ try {
 }
 ```
 
-### Example 2: Music Search with Multiple Services
+### Search Across Multiple Platforms
 
 ```php
 <?php
@@ -543,7 +549,7 @@ foreach ($services as $service) {
 }
 ```
 
-### Example 3: Album Art Color Theming
+### Dynamic Album Art Theming
 
 ```php
 <?php
@@ -573,7 +579,7 @@ if ($response->isSuccess()) {
     echo "  <h1>Album Theme</h1>\n";
     echo "  <p>This page is themed with colors from the album art.</p>\n";
     
-    // Show palette
+    // Show the whole palette
     echo "  <h2>Color Palette:</h2>\n";
     echo "  <div style='display: flex; gap: 10px;'>\n";
     foreach ($response->getPalette() as $color) {
@@ -586,7 +592,7 @@ if ($response->isSuccess()) {
 }
 ```
 
-### Example 4: Combined Workflow
+### Complete Workflow
 
 ```php
 <?php
@@ -594,14 +600,14 @@ if ($response->isSuccess()) {
 use RadioAPI\RadioAPI;
 use RadioAPI\Exceptions\RadioAPIException;
 
-// Initialize client
+// Set up your client
 $api = RadioAPI::make('https://api.radioapi.io', 'your-api-key')
     ->language('en')
     ->service(RadioAPI::SPOTIFY)
     ->timeout(60);
 
 try {
-    // 1. Get current track from stream
+    // Step 1: Get what's currently playing
     $streamUrl = 'https://stream.example.com/radio';
     $stream = $api->getStreamTitle($streamUrl);
     
@@ -612,13 +618,13 @@ try {
         
         echo "Now Playing: $artist - $song\n\n";
         
-        // 2. Search for the track to get more details
+        // Step 2: Search for more details about the track
         $search = $api->searchMusic("$artist - $song");
         
         if ($search->hasResults()) {
             $trackDetails = $search->getFirstTrack();
             
-            // 3. Extract colors from album artwork
+            // Step 3: Pull colors from the album art
             if (isset($trackDetails['artwork'])) {
                 $colors = $api->getImageColors($trackDetails['artwork']);
                 
@@ -629,7 +635,7 @@ try {
                 }
             }
             
-            // Display full track info
+            // Show everything
             echo "\nTrack Details:\n";
             echo "Artist: " . ($trackDetails['artist'] ?? 'N/A') . "\n";
             echo "Title: " . ($trackDetails['title'] ?? 'N/A') . "\n";
@@ -644,7 +650,7 @@ try {
 } catch (RadioAPIException $e) {
     echo "Error: " . $e->getMessage() . "\n";
     
-    // Handle specific errors
+    // Handle specific problems
     if ($e->isUnauthorized()) {
         echo "Please check your API key.\n";
     } elseif ($e->isRateLimited()) {
@@ -655,54 +661,54 @@ try {
 }
 ```
 
-## Best Practices
+## Tips and Best Practices
 
-### 1. Reuse Client Instances
+### Reuse Your Client
 
-Create one client instance and reuse it for multiple requests:
+Don't create a new client for every request—that's wasteful:
 
 ```php
-// Good ✓
+// Do this ✓
 $api = RadioAPI::make('https://api.radioapi.io', 'key');
 $stream1 = $api->getStreamTitle($url1);
 $stream2 = $api->getStreamTitle($url2);
 
-// Avoid ✗
+// Not this ✗
 $stream1 = RadioAPI::make('https://api.radioapi.io', 'key')->getStreamTitle($url1);
 $stream2 = RadioAPI::make('https://api.radioapi.io', 'key')->getStreamTitle($url2);
 ```
 
-### 2. Always Handle Errors
+### Always Handle Errors
 
-Wrap API calls in try-catch blocks:
+Things can go wrong, so be ready:
 
 ```php
 try {
     $response = $api->getStreamTitle($url);
 } catch (RadioAPIException $e) {
-    // Handle error appropriately
+    // Handle it gracefully
     error_log($e->getDetailedMessage());
 }
 ```
 
-### 3. Check Response Success
+### Check Success Before Using Data
 
-Always verify responses before accessing data:
+Don't assume everything worked:
 
 ```php
 $response = $api->getStreamTitle($url);
 
 if ($response->isSuccess()) {
     $track = $response->getCurrentTrack();
-    // Use track data
+    // Now you can safely use the data
 } else {
     echo "Error: " . $response->getError();
 }
 ```
 
-### 4. Use Configuration Methods
+### Use the Configuration Chain
 
-Take advantage of the fluent configuration:
+It's cleaner and reads better:
 
 ```php
 $api = RadioAPI::make('https://api.radioapi.io', 'key')
@@ -712,29 +718,29 @@ $api = RadioAPI::make('https://api.radioapi.io', 'key')
     ->timeout(45);
 ```
 
-### 5. Leverage Response Helpers
+### Use Helper Methods
 
-Use built-in helper methods instead of accessing raw data:
+They're there for a reason:
 
 ```php
-// Good ✓
+// Do this ✓
 $artist = $response->getArtist();
 $tracks = $response->getTracks();
 
-// Avoid ✗
+// Not this ✗
 $artist = $response->getRawData()['artist'] ?? null;
 $tracks = $response->getRawData()['tracks'] ?? [];
 ```
 
 ## Testing
 
-Run the test suite:
+Run the tests:
 
 ```bash
 composer test
 ```
 
-Run static analysis:
+Static analysis:
 
 ```bash
 composer phpstan
@@ -754,24 +760,23 @@ composer cs-fix
 
 ## License
 
-This library is open-sourced software licensed under the [MIT license](LICENSE).
+MIT licensed—use it however you like. See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Found a bug? Want to add a feature? Pull requests are welcome!
 
-## Credits
+## Built With
 
-Built with:
-- [ElliePHP HttpClient](https://github.com/elliephp/httpclient) - Modern HTTP client for PHP
+- [ElliePHP HttpClient](https://github.com/elliephp/httpclient) - The HTTP client powering everything under the hood
 
 ## Changelog
 
 ### 2.0.0 (2024-02-01)
 
 - Complete rewrite using ElliePHP HttpClient
-- Added fluent configuration API
-- Improved type safety with PHP 8.1+
-- Enhanced error handling
-- Added comprehensive documentation
-- New helper methods in response objects
+- Fluent configuration API
+- Better type safety with PHP 8.1+
+- Improved error handling
+- Comprehensive docs
+- More helpful response methods
