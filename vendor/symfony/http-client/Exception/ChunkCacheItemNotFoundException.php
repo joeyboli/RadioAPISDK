@@ -9,8 +9,8 @@
  * file that was distributed with this source code.
  */
 
-if (\PHP_VERSION_ID < 80300) {
-    class DateException extends Exception
-    {
-    }
+namespace Symfony\Component\HttpClient\Exception;
+
+final class ChunkCacheItemNotFoundException extends TransportException
+{
 }
