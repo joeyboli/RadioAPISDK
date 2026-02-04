@@ -760,7 +760,7 @@ composer cs-fix
 
 ## License
 
-MIT licensed—use it however you like. See the [LICENSE](LICENSE) file for details.
+MIT licensed
 
 ## Contributing
 
@@ -772,7 +772,7 @@ Found a bug? Want to add a feature? Pull requests are welcome!
 
 ## Changelog
 
-### 2.0.0 (2024-02-01)
+### 1.0.9 (2026-02-04)
 
 - Complete rewrite using ElliePHP HttpClient
 - Fluent configuration API
