@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadioAPI\Response;
 
 /**
@@ -14,8 +16,6 @@ class MusicSearchResponse implements ResponseInterface
 {
     /**
      * Raw response data from the API
-     *
-     * @var array
      */
     private array $data;
 
@@ -30,9 +30,7 @@ class MusicSearchResponse implements ResponseInterface
     }
 
     /**
-     * Get the raw response data from the API
-     *
-     * @return array The complete, unprocessed response data
+     * @inheritDoc
      */
     public function getRawData(): array
     {
@@ -40,9 +38,7 @@ class MusicSearchResponse implements ResponseInterface
     }
 
     /**
-     * Check if the API request was successful
-     *
-     * @return bool True if the request succeeded, false otherwise
+     * @inheritDoc
      */
     public function isSuccess(): bool
     {
@@ -50,9 +46,7 @@ class MusicSearchResponse implements ResponseInterface
     }
 
     /**
-     * Get the error message if the request failed
-     *
-     * @return string|null The error message, or null if no error occurred
+     * @inheritDoc
      */
     public function getError(): ?string
     {
@@ -62,16 +56,23 @@ class MusicSearchResponse implements ResponseInterface
     /**
      * Get all search result tracks
      *
-     * @return array Array of track information, or empty array if no results
+     * @return array Array of track information
+     *
+     * @example
+     * ```php
+     * foreach ($response->getTracks() as $track) {
+     *     echo $track['artist'] . ' - ' . $track['title'] . "\n";
+     * }
+     * ```
      */
     public function getTracks(): array
     {
-        // If the response contains tracks/results array, return it
+        // Handle multiple tracks in results/tracks array
         if (isset($this->data['tracks']) || isset($this->data['results'])) {
             return $this->data['tracks'] ?? $this->data['results'] ?? [];
         }
         
-        // If the response is a single track result (common case), wrap it in an array
+        // Handle single track result (wrap in array)
         if ($this->hasResults()) {
             return [$this->data];
         }
@@ -85,16 +86,24 @@ class MusicSearchResponse implements ResponseInterface
      * Useful when you only need the most relevant search result.
      *
      * @return array|null The first track data, or null if no results
+     *
+     * @example
+     * ```php
+     * $track = $response->getFirstTrack();
+     * if ($track) {
+     *     echo "Found: " . $track['artist'] . " - " . $track['title'];
+     * }
+     * ```
      */
     public function getFirstTrack(): ?array
     {
-        // If the response contains tracks/results array, return first item
+        // Handle multiple tracks
         if (isset($this->data['tracks']) || isset($this->data['results'])) {
             $tracks = $this->data['tracks'] ?? $this->data['results'] ?? [];
             return !empty($tracks) ? $tracks[0] : null;
         }
         
-        // If the response is a single track result, return it directly
+        // Handle single track result
         if ($this->hasResults()) {
             return $this->data;
         }
@@ -109,7 +118,6 @@ class MusicSearchResponse implements ResponseInterface
      */
     public function hasResults(): bool
     {
-        // Check if there's an error first
         if (isset($this->data['error']) || empty($this->data)) {
             return false;
         }
@@ -120,8 +128,10 @@ class MusicSearchResponse implements ResponseInterface
             return !empty($tracks);
         }
         
-        // Check if the response contains track fields (single result)
-        return isset($this->data['artist']) || isset($this->data['title']) || isset($this->data['song']);
+        // Check if response contains track fields (single result)
+        return isset($this->data['artist']) 
+            || isset($this->data['title']) 
+            || isset($this->data['song']);
     }
 
     /**
@@ -139,17 +149,60 @@ class MusicSearchResponse implements ResponseInterface
      *
      * @param string $service The service name (e.g., 'spotify', 'deezer')
      * @return array Array of tracks from the specified service
+     *
+     * @example
+     * ```php
+     * $spotifyTracks = $response->getTracksByService('spotify');
+     * ```
      */
     public function getTracksByService(string $service): array
     {
-        $tracks = $this->getTracks();
-        return array_filter($tracks, fn($track) => isset($track['service']) && $track['service'] === $service);
+        return $this->filter(fn($track) => 
+            isset($track['service']) && $track['service'] === $service
+        );
+    }
+
+    /**
+     * Filter tracks using a custom callback
+     *
+     * @param callable $callback Filter function that receives a track and returns bool
+     * @return array Filtered tracks
+     *
+     * @example
+     * ```php
+     * // Get only explicit tracks
+     * $explicit = $response->filter(fn($t) => $t['explicit'] ?? false);
+     * ```
+     */
+    public function filter(callable $callback): array
+    {
+        return array_values(array_filter($this->getTracks(), $callback));
+    }
+
+    /**
+     * Map tracks to a new structure using a callback
+     *
+     * @param callable $callback Map function that receives a track and returns transformed data
+     * @return array Mapped tracks
+     *
+     * @example
+     * ```php
+     * // Get only artist and title
+     * $simplified = $response->map(fn($t) => [
+     *     'artist' => $t['artist'],
+     *     'title' => $t['title']
+     * ]);
+     * ```
+     */
+    public function map(callable $callback): array
+    {
+        return array_map($callback, $this->getTracks());
     }
 
     /**
      * Get the search query that was used
      *
-     * @return string|null The original search query, or null if not available
+     * @return string|null The original search query
      */
     public function getQuery(): ?string
     {
@@ -159,7 +212,7 @@ class MusicSearchResponse implements ResponseInterface
     /**
      * Get the service that was searched
      *
-     * @return string|null The service name that was searched, or null if not specified
+     * @return string|null The service name that was searched
      */
     public function getService(): ?string
     {
