@@ -3,7 +3,7 @@
         'name' => 'joeyboli/radioapisdk',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '52da96e1d0923c347daeef6fe97d93b61ac187eb',
+        'reference' => 'a7d8db79f49ea3ec286a2dcd7eae9a33e211fa43',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'elliephp/httpclient' => array(
-            'pretty_version' => '1.0.6',
-            'version' => '1.0.6.0',
-            'reference' => '44e61b9c755a8566bb0fd3f868e760b1594c60d3',
+            'pretty_version' => '1.0.8',
+            'version' => '1.0.8.0',
+            'reference' => 'f82470620110b4e1b134ac26a7b3208e0de72829',
             'type' => 'library',
             'install_path' => __DIR__ . '/../elliephp/httpclient',
             'aliases' => array(),
@@ -22,7 +22,7 @@
         'joeyboli/radioapisdk' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '52da96e1d0923c347daeef6fe97d93b61ac187eb',
+            'reference' => 'a7d8db79f49ea3ec286a2dcd7eae9a33e211fa43',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

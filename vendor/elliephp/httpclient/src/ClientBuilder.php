@@ -363,7 +363,7 @@ class ClientBuilder
      * - auth_basic: Basic authentication [username, password]
      * - auth_bearer: Bearer token
      * - retry_failed: Retry configuration (use withRetry() instead)
-     * - and more...
+     * - And more...
      * 
      * @see https://symfony.com/doc/current/http_client.html#configuration
      * 
@@ -501,10 +501,10 @@ class ClientBuilder
         // If it's a string path, open it as a resource
         if (is_string($file)) {
             if (!file_exists($file)) {
-                throw new InvalidArgumentException("File not found: {$file}");
+                throw new InvalidArgumentException("File not found: $file");
             }
             if (!is_readable($file)) {
-                throw new InvalidArgumentException("File is not readable: {$file}");
+                throw new InvalidArgumentException("File is not readable: $file");
             }
             $file = fopen($file, 'rb');
         }
@@ -681,7 +681,7 @@ class ClientBuilder
             // Wrap timeout exceptions with specific timeout information
             $timeout = $requestOptions['timeout'] ?? 'unknown';
             throw new RequestException(
-                "Request timed out after {$timeout} seconds: {$e->getMessage()}",
+                "Request timed out after $timeout seconds: {$e->getMessage()}",
                 $e->getCode(),
                 $e
             );
@@ -714,7 +714,7 @@ class ClientBuilder
         
         // Prepend base URL
         $url = ltrim($url, '/');
-        return "{$this->baseUrl}/{$url}";
+        return "$this->baseUrl/$url";
     }
 }
 

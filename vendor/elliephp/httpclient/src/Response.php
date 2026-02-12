@@ -284,7 +284,7 @@ class Response
     }
 
     /**
-     * Get response as object
+     * Get response as an object
      */
     public function object(?string $key = null, mixed $default = null): mixed
     {
@@ -318,10 +318,10 @@ class Response
                 throw $e;
             }
 
-            // Try to extract error message safely
+            // Try to extract an error message safely
             $message = "HTTP request returned status code $status";
 
-            // Use safe json method to prevent double-faulting
+            // Use safe JSON method to prevent double-faulting
             $json = $this->json(null, []);
 
             if (is_array($json)) {

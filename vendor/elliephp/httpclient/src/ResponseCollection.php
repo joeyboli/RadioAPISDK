@@ -73,6 +73,6 @@ readonly class ResponseCollection
 
     public function toJson(): string
     {
-        return json_encode($this->items, JSON_THROW_ON_ERROR);
+        return json_encode($this->items);
     }
 }

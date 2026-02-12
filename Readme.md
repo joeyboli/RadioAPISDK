@@ -732,32 +732,6 @@ $artist = $response->getRawData()['artist'] ?? null;
 $tracks = $response->getRawData()['tracks'] ?? [];
 ```
 
-## Testing
-
-Run the tests:
-
-```bash
-composer test
-```
-
-Static analysis:
-
-```bash
-composer phpstan
-```
-
-Check code style:
-
-```bash
-composer cs-check
-```
-
-Fix code style:
-
-```bash
-composer cs-fix
-```
-
 ## License
 
 MIT licensed

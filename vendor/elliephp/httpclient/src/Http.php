@@ -19,7 +19,8 @@ namespace ElliePHP\Components\HttpClient;
  * 
  * @method static Response get(string $url, array $query = []) Send a GET request
  * @method static Response post(string $url, array $data = []) Send a POST request
- * @method static Response put(string $url, array $data = []) Send a PUT request
+ * @method static Response put(string $url, array $data = []) Send a PUT
+ * @method static Response ping(string $url, int $timeout = 1) Ping a URL using a HEAD request to check availability.
  * @method static Response patch(string $url, array $data = []) Send a PATCH request
  * @method static Response delete(string $url) Send a DELETE request
  * @method static ClientBuilder withBaseUrl(string $baseUrl) Set the base URL for requests

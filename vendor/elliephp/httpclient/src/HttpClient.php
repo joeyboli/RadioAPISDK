@@ -59,7 +59,13 @@ class HttpClient
      */
     private function getClient(): HttpClientInterface
     {
-        return $this->client ?? SymfonyHttpClient::create();
+        return $this->client ?? SymfonyHttpClient::create(
+            [
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (compatible; ElliePHP-HttpClient/1.0; +https://github.com/ElliePHP/HttpClient)',
+                ],
+            ]
+        );
     }
 
     /**
@@ -138,7 +144,7 @@ class HttpClient
      *                    ->get('/api/protected-resource');
      * ```
      * 
-     * @param string $token The bearer token (without "Bearer " prefix)
+     * @param string $token The bearer token (without "Bearer" prefix)
      * @return ClientBuilder A builder instance for method chaining
      */
     public function withToken(string $token): ClientBuilder
@@ -781,6 +787,23 @@ class HttpClient
     public function delete(string $url): Response
     {
         return $this->request('DELETE', $url);
+    }
+
+
+
+    /**
+     * Ping a URL to check its status
+     *
+     * Uses a HEAD request to check availability without downloading content.
+     * Overrides the default timeout to fail fast.
+     *
+     * @param string $url The URL to ping
+     * @param int $timeout Seconds to wait (default: 1)
+     * @return Response
+     */
+    public function ping(string $url, int $timeout = 1): Response
+    {
+        return $this->request('HEAD', $url, ['timeout' => $timeout]);
     }
 
     /**

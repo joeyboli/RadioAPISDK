@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "elliephp/httpclient",
-            "version": "1.0.6",
+            "version": "1.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ElliePHP/HttpClient.git",
-                "reference": "44e61b9c755a8566bb0fd3f868e760b1594c60d3"
+                "reference": "f82470620110b4e1b134ac26a7b3208e0de72829"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ElliePHP/HttpClient/zipball/44e61b9c755a8566bb0fd3f868e760b1594c60d3",
-                "reference": "44e61b9c755a8566bb0fd3f868e760b1594c60d3",
+                "url": "https://api.github.com/repos/ElliePHP/HttpClient/zipball/f82470620110b4e1b134ac26a7b3208e0de72829",
+                "reference": "f82470620110b4e1b134ac26a7b3208e0de72829",
                 "shasum": ""
             },
             "require": {
@@ -55,7 +55,7 @@
                 "issues": "https://github.com/elliephp/httpclient/issues",
                 "source": "https://github.com/elliephp/httpclient"
             },
-            "time": "2025-11-23T22:22:36+00:00"
+            "time": "2026-02-07T16:39:10+00:00"
         },
         {
             "name": "psr/container",
